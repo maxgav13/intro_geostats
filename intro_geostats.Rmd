@@ -13,7 +13,7 @@ keywords:
   - Aplicación web
   - Predicción
 abstract: |
-  Kriging se ha usado y ha sido propuesto como el mejor método de interpolación, muchas veces sin realmente entender cómo es que se usa adecuadamente y dejando que el software que lo brinda decida cómo implementarlo. Esta aseveración tiene fundamento cuando se procede de la manera correcta, realizando los pasos necesarios. Estos pasos se detallan en este trabajo, abordando la teoría y la práctica, y mediante un ejemplo se implementa el método usando el software estadístico libre **R**. Además, se presenta una aplicación web de libre acceso para quienes no se sientan cómodos usando lenguajes de programación. Es necesario entender cómo aplicar Kriging correctamente para que los resultados obtenidos sean relevantes y confiables.
+  Kriging se ha usado y ha sido propuesto como el mejor método de interpolación, muchas veces sin realmente entender cómo es que se usa adecuadamente y dejando que el software que lo brinda decida cómo implementarlo. Esta aseveración tiene fundamento cuando se procede de la manera correcta, realizando los pasos necesarios durante el análisis y modelado geoestadístico, por lo que es necesario entender cómo aplicar Kriging correctamente para que los resultados obtenidos sean relevantes y confiables. Estos pasos se detallan en este trabajo, abordando la teoría y mediante un ejemplo se pone en práctica el método usando el software estadístico libre **R**. Adicionalmente, se presenta una aplicación web de libre acceso para quienes no se sientan cómodos usando lenguajes de programación.
 # date: "`r format(Sys.Date(), '%d %B %Y')`"
 lang: es
 bibliography: ["bib/geostats.bib", "bib/packages.bib", "bib/knit.bib"]
@@ -21,18 +21,6 @@ bibliography: ["bib/geostats.bib", "bib/packages.bib", "bib/knit.bib"]
 csl: csl/apa.csl
 link-citations: true
 output:
-  bookdown::word_document2:
-    df_print: kable
-    toc: false
-    toc_depth: 2
-  rticles::springer_article:
-    df_print: kable
-  bookdown::pdf_document2:
-    df_print: kable
-    number_sections: false
-    toc: false
-    includes:
-      in_header: header.tex
   bookdown::html_document2:
     toc: false
     toc_depth: 2
@@ -42,6 +30,18 @@ output:
   distill::distill_article:
     toc_depth: 2
     df_print: kable
+  bookdown::pdf_document2:
+    df_print: kable
+    number_sections: false
+    toc: false
+    includes:
+      in_header: header.tex
+  rticles::springer_article:
+    df_print: kable
+  bookdown::word_document2:
+    df_print: kable
+    toc: false
+    toc_depth: 2
 always_allow_html: true
 ---
 
@@ -100,13 +100,13 @@ y_vmap = "Distancia N-S [m]"
 
 En las ciencias que tienen una fuerte componente espacial (dentro de ellas geología) es común recolectar muestras, describirlas y tener la ubicación de dónde se recolectaron. En muchos casos el muestreo se hace con el fin de caracterizar una variable o proceso en el espacio, con lo que se tiene en mente pasar de puntos a una superficie (mapa). 
 
-Para poder generar estas superficies se pueden emplear diferentes [Métodos de interpolación], donde comunmente se ha dado a entender que Kriging es el método por excelencia a usar (casi que indiscriminadamente), pero no se ha profundizado en cómo usar el método apropiadamente y cuándo es adecuado o no utilizarlo. 
+Para poder generar estas superficies se pueden emplear diferentes [Métodos de interpolación], donde comúnmente se ha dado a entender que Kriging es el método por excelencia a usar (casi que indiscriminadamente), pero no se ha profundizado en cómo usar el método apropiadamente y cuándo es adecuado o no utilizarlo. 
 
 La facilidad que brindan programas de cómputo comerciales (Surfer, ArcGIS), con sus interfaces "point & click", de implementar éste y otros métodos hace creer al usuario que es simplemente de escoger un método y decirle que lo ejecute, sin guiar al usuario de manera apropiada en el proceso necesario para obtener resultados significativos, confiables, y reproducibles. Cabe mencionar que el procedimiento y los pasos que se van a mostrar acá están disponibles en estos softwares pero no de manera frontal para el usuario.
 
-El objetivo principal de este artículo es de índole educativa/informativa y corresponde con introducir al lector en qué es la geostadística y cómo realizar un análisis geoestadístico de manera apropiada. La idea es brindar una base y guía de cómo hacer una interpolación de los datos de interés en español, ya que la mayoría de los textos (libros y artículos) están en inglés, y a veces se enfocan únicamente en los resultados (mapas) y no tanto en el proceso completo.
+El objetivo principal de este artículo es de índole educativa/informativa y corresponde con introducir al lector en qué es la geoestadística y cómo realizar un análisis geoestadístico de manera apropiada. La idea es brindar una base y guía de cómo hacer una interpolación de los datos de interés en español, ya que la mayoría de los textos (libros y artículos) están en inglés, y a veces se enfocan únicamente en los resultados (mapas) y no tanto en el proceso completo.
 
-Para el procesamiento de los datos y la implementación de la geoestadística se va a utilizar el software libre multi-plataforma **R** [@R-base] así como diferentes paquetes, que va a permitir el desarrollo de rutinas que se pueden reutilizar para análisis futuros. Adicionalmente se presentará una apliación web, desarrollada en **R** y de libre acceso, que hace uso de lo expuesto aquí. Se recomienda al lector, si no está familiarizado con **R** o quiere profundizar más en su uso, consultar @garnier-villarreal2020.
+Para el procesamiento de los datos y la implementación de la geoestadística se va a utilizar el software libre multi-plataforma **R** [@R-base] así como diferentes paquetes, que va a permitir el desarrollo de rutinas que se pueden reutilizar para análisis futuros. Adicionalmente se presentará una aplicación web, desarrollada en **R** y de libre acceso, que hace uso de lo expuesto aquí. Se recomienda al lector, si no está familiarizado con **R** o quiere profundizar más en su uso, consultar @garnier-villarreal2020.
 
 # Métodos de interpolación {#geostats-met-interp}
 
@@ -128,7 +128,7 @@ Una ventaja de Kriging con respecto a otros métodos de interpolación más popu
 
 La geoestadística no es estadística (clásica) aplicada a datos geológicos, es un tipo de estadística que hace uso de la componente espacial de los datos y pretende caracterizar sistemas distribuidos en el espacio los cuales no se conocen por completo [@davis2002; @isaaks1989; @webster2007]. Hay que resaltar que Kriging es un método de interpolación (uno de los usos de la geoestadística) que corresponde con uno de los pasos en el análisis y modelado geoestadístico [@oliver2014c], no hay que confundir o pensar que geoestadística es lo mismo que Kriging, que es un error común.
 
-La geoestadística (Kriging) se ha utilizado más para la interpolación (estimación - Kriging) de variables en el espacio, pero también se puede utilizar para la simulación (Simulación Gaussiana Secuencial) de la variable de interés (otra forma de usar geoestadística que no es Kriging). El resultado de la interpolación es la distribución del valor promedio de la variable (cuál sería el valor más probable de encontrar), la simulación genera una cantidad definida de realizaciones (N) de la variable, que pueden estar condicionadas o no a datos observados, y presentan una disribución más heterogénea que la interpolación [@chiles1999; @goovaerts1997; @pebesma2020; @pyrcz2014; @webster2007]. En este trabajo el enfoque va a ser en el uso más común y sencillo que es la interpolación (estimación) de una variable en el espacio.
+La geoestadística (Kriging) se ha utilizado más para la interpolación (estimación - Kriging) de variables en el espacio, pero también se puede utilizar para la simulación (Simulación Gaussiana Secuencial) de la variable de interés (otra forma de usar geoestadística que no es Kriging). El resultado de la interpolación es la distribución del valor promedio de la variable (cuál sería el valor más probable de encontrar), la simulación genera una cantidad definida de realizaciones (N) de la variable, que pueden estar condicionadas o no a datos observados, y presentan una distribución más heterogénea que la interpolación [@chiles1999; @goovaerts1997; @pebesma2020; @pyrcz2014; @webster2007]. En este trabajo el enfoque va a ser en el uso más común y sencillo que es la interpolación (estimación) de una variable en el espacio.
 
 La base de lo que se va a exponer corresponde con capítulos de @davis2002, @swan1995, @borradaile2003, y @mckillup2010, y textos más detallados y exclusivos en la materia de @chiles1999, @cressie1993, @goovaerts1997, @isaaks1989, @pyrcz2014, @webster2007, y @wackernagel2003, los cuales corresponden con referencias clásicas y actualizadas. Para la implementación en **R** y más base teórica y práctica se puede consultar @nowosad2019 y @pebesma2020.
 
@@ -138,11 +138,11 @@ En esta sección se definen algunos conceptos fundamentales en geoestadística, 
 
 ### Correlación espacial
 
-El concepto fundamental en geoestadística y la estadística espacial en general, es que las observaciones son dependientes de la distancia entre ellas, donde hay más similitud (relación) conforme más cercanas estén als observaciones y esa similitud o relación es más débil conforme la distancia incrementa [@chiles1999; @cressie1993; @goovaerts1997; @isaaks1989; @webster2007].
+El concepto fundamental en geoestadística y la estadística espacial en general, es que las observaciones son dependientes de la distancia entre ellas, donde hay más similitud (relación) conforme más cercanas estén las observaciones y esa similitud o relación es más débil conforme la distancia incrementa [@chiles1999; @cressie1993; @goovaerts1997; @isaaks1989; @webster2007].
 
 ### Semivarianza
 
-Es la medida que se usa para determinar la disimilitud entre observaciones que varían con la distancia, y se representa mediante la Ecuación \@ref(eq:semivarianza), donde $Z(x_i)$ es el valor de la variable en la posición $x_i$, $Z(x_i+h)$ es el valor de la variable a una distancia $h$, $N$ es el número total de puntos (observaciones), y $N(h)$ es el número de pares de puntos que se encuentran a una distancia $h$ específica. **Se recomienda tener más de 30 pares de puntos por cada distancia $h$, y no calcularl la semivarianza más allá de la mitad de la máxima distancia entre observaciones** [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. 
+Es la medida que se usa para determinar la disimilitud entre observaciones que varían con la distancia, y se representa mediante la Ecuación \@ref(eq:semivarianza), donde $Z(x_i)$ es el valor de la variable en la posición $x_i$, $Z(x_i+h)$ es el valor de la variable a una distancia $h$, $N$ es el número total de puntos (observaciones), y $N(h)$ es el número de pares de puntos que se encuentran a una distancia $h$ específica. **Se recomienda tener más de 30 pares de puntos por cada distancia $h$, y no calcular la semivarianza más allá de la mitad de la máxima distancia entre observaciones** [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. 
 
 \begin{equation}
   \gamma(h) = \frac{1}{2N(h)}\sum_{i=1}^{N(h)} [Z(x_i+h)-Z(x_i)]^2
@@ -167,7 +167,7 @@ knitr::include_graphics(here('images','semivar-irregular.png'))
 
 Para visualizar la relación entre la semivarianza y la distancia (relación espacial de la variable) se usa el variograma experimental (Figura \@ref(fig:variograma)). 
 
-El cálculo de la semivarianza y su representación por medio del variograma experimental son los primeros pasos donde el usuario/analista tiene control sobre la construcción y representación de la relación espacial de la variable, y el resultado va a ser el insumo para pasos posteriores. *Como decisiones fundamentales se tienen la escogencia de la distancia máxima y el intervalo de distancias ($h$). Conforme se varíen estos valores va a variar la semivarianza y cualquier ajuste que se le realice y su porterior uso en la interpolación* [@isaaks1989; @oliver2014c; @webster2007].
+El cálculo de la semivarianza y su representación por medio del variograma experimental son los primeros pasos donde el usuario/analista tiene control sobre la construcción y representación de la relación espacial de la variable, y el resultado va a ser el insumo para pasos posteriores. *Como decisiones fundamentales se tienen la escogencia de la distancia máxima y el intervalo de distancias ($h$). Conforme se varíen estos valores va a variar la semivarianza y cualquier ajuste que se le realice y su posterior uso en la interpolación* [@isaaks1989; @oliver2014c; @webster2007].
 
 (ref:variograma) Ejemplo de variograma experimental, mostrando la relación espacial de la variable.
 
@@ -177,7 +177,7 @@ knitr::include_graphics(here('images','variograma-exp.png'))
 
 ### Modelo de variograma
 
-El variograma experimental es una representación discreta de la relación espcial ya que se cuenta solo con puntos a las distancias definidas. Para poder interpolar valores a diferentes distancias es necesario tener un modelo continuo que se ajuste a los datos. Para ajustar un modelo hay que analizar el variograma experimental y realizar una estimación inicial de las partes que lo van a definir, conforme se muestra en la Figura \@ref(fig:modelo-variog) [@goovaerts1997; @sarma2009; @webster2007].
+El variograma experimental es una representación discreta de la relación espacial ya que se cuenta solo con puntos a las distancias definidas. Para poder interpolar valores a diferentes distancias es necesario tener un modelo continuo que se ajuste a los datos. Para ajustar un modelo hay que analizar el variograma experimental y realizar una estimación inicial de las partes que lo van a definir, conforme se muestra en la Figura \@ref(fig:modelo-variog) [@goovaerts1997; @sarma2009; @webster2007].
 
 (ref:modelo-variog) Modelo de variograma mostrando las partes: meseta, pepita, y rango. Tomado de @webster2007.
 
@@ -213,7 +213,7 @@ knitr::include_graphics(here('images','variog-potencia.png'))
 
 - Esférico
 
-Es de los más usados en geociencias, presenta una meseta definida, y se caracteriza por presentar unc importamiento lineal cerca del origen. Se calcula mediante la Ecuación \@ref(eq:variog-esferico), y un ejemplo se muestra en la Figura \@ref(fig:variog-esferico).
+Es de los más usados en geociencias, presenta una meseta definida, y se caracteriza por presentar un comportamiento lineal cerca del origen. Se calcula mediante la Ecuación \@ref(eq:variog-esferico), y un ejemplo se muestra en la Figura \@ref(fig:variog-esferico).
 
 \begin{equation}
   \gamma(h) = 
@@ -232,7 +232,7 @@ knitr::include_graphics(here('images','variog-esferico.png'))
 
 - Exponencial
 
-Este modelo tiene un comportamient asintótico y no alcanza una meseta tan estable como el esférico, por esto lo que se usa en el modelo como rango es $r=a/3$, o sea, una tercera parte del rango esperado. Se calcula mediante la Ecuación \@ref(eq:variog-exp) y un ejemplo se muestra en la Figura \@ref(fig:variog-exp).
+Este modelo tiene un comportamiento asintótico y no alcanza una meseta tan estable como el esférico, por esto lo que se usa en el modelo como rango es $r=a/3$, o sea, una tercera parte del rango esperado. Se calcula mediante la Ecuación \@ref(eq:variog-exp) y un ejemplo se muestra en la Figura \@ref(fig:variog-exp).
 
 \begin{equation}
   \gamma(h) = C_0 + C_1 \left[ 1 - exp\left(-\frac{h}{r}\right) \right]
@@ -247,7 +247,7 @@ knitr::include_graphics(here('images','variog-exp.png'))
 
 - Gaussiano
 
-Este modelo es similar al exponencial en que no alcanza una meseta estable sino que tiene un comportamiento asintótico, y otra caracteristica es que tiene un comportamiento suavizado cerca del origen. Como no alcanza una meseta el rango que se usa en el modelo es $r=a/\sqrt{3}$, o sea, el rango esperado entre la raíz de 3. Se calcula mediante la Ecuación \@ref(eq:variog-gaus), y un ejemplo se muestra en la Figura \@ref(fig:variog-gaus).
+Este modelo es similar al exponencial en que no alcanza una meseta estable sino que tiene un comportamiento asintótico, y otra característica es que tiene un comportamiento suavizado cerca del origen. Como no alcanza una meseta el rango que se usa en el modelo es $r=a/\sqrt{3}$, o sea, el rango esperado entre la raíz de 3. Se calcula mediante la Ecuación \@ref(eq:variog-gaus), y un ejemplo se muestra en la Figura \@ref(fig:variog-gaus).
 
 \begin{equation}
   \gamma(h) = C_0 + C_1 \left[ 1 - exp\left(-\frac{h}{r}\right)^2 \right]
@@ -260,7 +260,7 @@ Este modelo es similar al exponencial en que no alcanza una meseta estable sino 
 knitr::include_graphics(here('images','variog-gaus.png'))
 ```
 
-La Figura \@ref(fig:variog-comparacion) es una comparación de los tres modelos más comunes en geociencias, donde todos corresponden con una estructura que presenta los siguientes parámetros: $C_0=0$, $C_1=30$, y $a=210$. Hay que resaltar que el modelo esférico tiene un comportamiento lineal cerca del origen, el modelo exponencial un comportamiento más creciente (convexo), y el modelo gaussiano un comportamiento suavizado. Adiconalmente, los modelos exponencial y gaussiano no alcanzan la meseta de la estructura, contrario al esférico que sí la alcanza.
+La Figura \@ref(fig:variog-comparacion) es una comparación de los tres modelos más comunes en geociencias, donde todos corresponden con una estructura que presenta los siguientes parámetros: $C_0=0$, $C_1=30$, y $a=210$. Hay que resaltar que el modelo esférico tiene un comportamiento lineal cerca del origen, el modelo exponencial un comportamiento más creciente (convexo), y el modelo gaussiano un comportamiento suavizado. Adicionalmente, los modelos exponencial y gaussiano no alcanzan la meseta de la estructura, contrario al esférico que sí la alcanza.
 
 ```{r variog-comparacion, echo=FALSE, fig.cap='Comparación visual de los tres modelos más usados en geociencias, todos respresentando la misma estructura ($C_0=0$, $C_1=30$, y $a=210$).', out.width='90%'}
 knitr::include_graphics(here('images','variog-comparacion.png'))
@@ -292,7 +292,7 @@ gg.anis
 
 La mejor forma de evaluar el ajuste de un modelo específico sobre el variograma experimental es por medio de la validación cruzada. De manera general lo que se hace es dejar por fuera una o varias de las observaciones y con el modelo ajustado se predice el valor de la variable para esas observaciones [@chiles1999; @goovaerts1997; @isaaks1989; @oliver2014c; @webster2007]. 
 
-El tipo de validación cruzada más usado es *LOO* (leave-one-out), donde se deja por fuera una observación a la vez y se predice el valor de la variable para cada observación por separado [@goovaerts1997; @isaaks1989; @oliver2014c; @webster2007]. El paquete *gstat* ofrece esta opción (por defecto) y la opción de *K-Fold*. En *K-Fold* se escoge una cantidad de grupos (K) en los que se dividen las observaciones (típicamente 5 o 10) y se deja un grupo de observaciones por fuera cada vez, donde se predice el valor de variable para todas las obervaciones del grupo; este proceso se repite K veces.
+El tipo de validación cruzada más usado es *LOO* (leave-one-out), donde se deja por fuera una observación a la vez y se predice el valor de la variable para cada observación por separado [@goovaerts1997; @isaaks1989; @oliver2014c; @webster2007]. El paquete *gstat* ofrece esta opción (por defecto) y la opción de *K-Fold*. En *K-Fold* se escoge una cantidad de grupos (K) en los que se dividen las observaciones (típicamente 5 o 10) y se deja un grupo de observaciones por fuera cada vez, donde se predice el valor de variable para todas las observaciones del grupo; este proceso se repite K veces.
 
 Una vez realizado el ajuste y la validación cruzada del mismo se obtienen valores predecidos y observados para cada punto. Con esta información se pueden usar diferentes métricas, donde lo ideal sería comparar cada una de estas métricas para diferentes modelos ajustados, y se escogería el modelo que obtenga mejores métricas [@chiles1999; @goovaerts1997; @isaaks1989; @oliver2014c; @webster2007].
 
@@ -300,7 +300,7 @@ Dentro de las métrica más usadas están [@oliver2014c; @webster2007; @yao2013p
 
 En estas métricas $N$ es el total de observaciones, $Y_i$ es el valor observado en el punto $i$, $\hat{Y_i}$ es el valor predecido en el punto $i$, $s^2_{ei}$ es el error/varianza de Kriging, y $\bar{Y}$ es la media (promedio) de la variable.
 
-- Error medio ($ME$): El error corresponde con los residuales de lo observado menos lo predecido, uan cez se tienen estos valores se les calcula la media e idelamente se esperaría obtener un valor cercano a 0. Se calcula mediante la Ecuación \@ref(eq:xval-me) y al comparar modelos se escogería el modelo que presente un valor más cercano a 0.
+- Error medio ($ME$): El error corresponde con los residuales de lo observado menos lo predecido, una vez se tienen estos valores se les calcula la media e idealmente se esperaría obtener un valor cercano a 0. Se calcula mediante la Ecuación \@ref(eq:xval-me) y al comparar modelos se escogería el modelo que presente un valor más cercano a 0.
 
 \begin{equation}
   ME = \frac{1}{N} \sum_{i=1}^{N} (Y_i-\hat{Y_i})
@@ -321,14 +321,14 @@ En estas métricas $N$ es el total de observaciones, $Y_i$ es el valor observado
   (\#eq:xval-msdr)
 \end{equation}
 
-- Error Porcentual Absoluto Medio ($MAPE$): Es una medida porcentual de la diferencia entre lo observado y lo predecido, con un rango de 0 a 1 o de 0 a 100 si se multpilca por 100. Se esperaría que este valor ande cerca de 0 o lo más bajo posible. Se calcula mediante la Ecuación \@ref(eq:xval-mape) y comparando modelos se escogería el que presente el $MAPE$ más bajo.
+- Error Porcentual Absoluto Medio ($MAPE$): Es una medida porcentual de la diferencia entre lo observado y lo predecido, con un rango de 0 a 1 o de 0 a 100 si se multiplica por 100. Se esperaría que este valor ande cerca de 0 o lo más bajo posible. Se calcula mediante la Ecuación \@ref(eq:xval-mape) y comparando modelos se escogería el que presente el $MAPE$ más bajo.
 
 \begin{equation}
   MAPE = \frac{1}{N} \sum_{i=1}^{N} \Big| \frac{(Y_i-\hat{Y_i})}{Y_i} \Big|
   (\#eq:xval-mape)
 \end{equation}
 
-- Estadìstico de bondad de predicción ($G$): Este estadístico mide qué tan efectiva es la predicción a si se hubiera usado simplemente la media (promedio) de la variable. Valores de 1 indican una predicción perfecta, valores positivos indican que el modelo es más efectivo que la media, valores negativos indican que el modelo es menos efectivo que la media, y un valor de cero indica que sería mejor usar la media. Se calcula mediante la Ecuación \@ref(eq:xval-g) y comparando modelos se escogería el que presente el $G$ más cercano a 1.
+- Estadístico de bondad de predicción ($G$): Este estadístico mide qué tan efectiva es la predicción a si se hubiera usado simplemente la media (promedio) de la variable. Valores de 1 indican una predicción perfecta, valores positivos indican que el modelo es más efectivo que la media, valores negativos indican que el modelo es menos efectivo que la media, y un valor de cero indica que sería mejor usar la media. Se calcula mediante la Ecuación \@ref(eq:xval-g) y comparando modelos se escogería el que presente el $G$ más cercano a 1.
 
 \begin{equation}
   G = 1 -  \bigg[ \frac{\sum_{i=1}^{N}(Y_i-\hat{Y_i})^2}{\sum_{i=1}^{N}(Y_i-\bar{Y})^2} \bigg]
@@ -337,7 +337,7 @@ En estas métricas $N$ es el total de observaciones, $Y_i$ es el valor observado
 
 ### Kriging
 
-Kriging es un método de interpolación (estimación) donde la idea es obtener valores de la variable en lugares donde no se obtuvo muestra. El método hace uso del modelo ajustado para asignar pesos a los puntos a interpolar dependiendo de la distancia entre ellos. Los puntos más cercanos van a presentar valores menores de semivarianza (mayor peso) y los puntos más lejanos valores mayores de semivarianza (menor peso), y si hay puntos que caen fuera del rango estos van a tener influencia mínima o nula [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. Lo anterior se presenenta de manera gráfica en la Figura \@ref(fig:kriging-pesos).
+Kriging es un método de interpolación (estimación) donde la idea es obtener valores de la variable en lugares donde no se obtuvo muestra. El método hace uso del modelo ajustado para asignar pesos a los puntos a interpolar dependiendo de la distancia entre ellos. Los puntos más cercanos van a presentar valores menores de semivarianza (mayor peso) y los puntos más lejanos valores mayores de semivarianza (menor peso), y si hay puntos que caen fuera del rango estos van a tener influencia mínima o nula [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. Lo anterior se presenta de manera gráfica en la Figura \@ref(fig:kriging-pesos).
 
 (ref:kriging-pesos) Visualización del proceso de interpolación mediante Kriging, donde para el punto a interpolar (D), el punto que está más cercano (C) tiene más peso (influencia, baja semivarianza), y el punto más lejano (A) prácticamente no tiene peso ya que cae fuera del rango. Tomado de @mckillup2010.
 
@@ -451,9 +451,9 @@ ggplot(datos, aes_string(myvar)) +
 
 Como los datos iniciales están en una tabla, es necesario convertir estos datos en datos/objetos espaciales, para poder realizar operaciones y análisis previos al análisis geoestadístico.
 
-En este caso los datos tienen una grilla de coordenadas local la cual no corresponde con ningun sistema de coordenadas reconocido. De manera general se recomienda trabajar los datos en sistemas de coordenadas planas (x,y) por lo que si se tienen en geográficas (long, lat) se recomienda convertirlas a planas conforme la zona de estudio. Para esto se puede consultar @garnier-villarreal2020, donde se presenta un capítulo dedicado al trato de datos espaciales en **R**, y se indica como transformar los datos de un sistema de coordenadas a otro.
+En este caso los datos tienen una grilla de coordenadas local la cual no corresponde con ningún sistema de coordenadas reconocido. De manera general se recomienda trabajar los datos en sistemas de coordenadas planas (x,y) por lo que si se tienen en geográficas (long, lat) se recomienda convertirlas a planas conforme la zona de estudio. Para esto se puede consultar @garnier-villarreal2020, donde se presenta un capítulo dedicado al trato de datos espaciales en **R**, y se indica como transformar los datos de un sistema de coordenadas a otro.
 
-Para crear el objeto espacial se usa la función `st_as_sf` del paquete *sf* [@R-sf], donde los argumentos requeridos son los datos, las columnas donde están las coordenadas (x,y), y opcionalmente el código del sistema de coordenadas. Como en este caso los datos no corresponden con ninguna sistema de coordenadas se pone `NA`, pero si no se usaria el código epsg.
+Para crear el objeto espacial se usa la función `st_as_sf` del paquete *sf* [@R-sf], donde los argumentos requeridos son los datos, las columnas donde están las coordenadas (x,y), y opcionalmente el código del sistema de coordenadas. Como en este caso los datos no corresponden con ninguna sistema de coordenadas se pone `NA`, pero si no se usaría el código epsg.
 
 ```{r datos-sf}
 datos_sf = st_as_sf(datos, coords = 1:2, crs = NA) %>% 
@@ -511,7 +511,7 @@ gg.map.pts
 El siguiente código no se ejecuta, ya que genera un mapa interactivo que no se puede desplegar aquí, pero se incluye para referencia y en caso de que se quiera utilizar. Para este mapa se usa el paquete *mapview* [@R-mapview] y para los colores se usa el paquete *RColorBrewer* [@R-RColorBrewer].
 
 ```{r eval=F}
-mapview(outline, alpha.regions = 0, layer.name='Border', 
+mapview(outline, alpha.regions = 0, layer.name='Borde', 
         homebutton = F, legend = F, native.crs = F) + 
   mapview(datos_sf, zcol = myvar, alpha=0.1, 
           layer.name = myvar, native.crs = F, 
@@ -520,11 +520,11 @@ mapview(outline, alpha.regions = 0, layer.name='Border',
 
 ## Modelado geoestadístico 
 
-Habiendo estudiado la variable y hecho los pasos inciales de manipulación, anpalisis y visualización se procede con el modelado geoestadístico, mostrando y explicando los distintos pasos. En este caso como la variable no requirió de ninguna transformación se va a usar el Kriging Ordinario.
+Habiendo estudiado la variable y hecho los pasos iniciales de manipulación, análisis y visualización se procede con el modelado geoestadístico, mostrando y explicando los distintos pasos. En este caso como la variable no requirió de ninguna transformación se va a usar el Kriging Ordinario.
 
 ### Variograma experimental
 
-El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Aqupi se empieza a hacer uso de *gstat*, donde es conveniente crear un objeto `gstat` en el cual se definen los datos a usar y la variable de interés. Para definir la variable de interés se usa la sintaxis de fórmula de la siguiente forma: `variable ~ 1`, que sería similar a definir un modelo lineal para sólo el intercepto.
+El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Aquí se empieza a hacer uso de *gstat*, donde es conveniente crear un objeto `gstat` en el cual se definen los datos a usar y la variable de interés. Para definir la variable de interés se usa la sintaxis de fórmula de la siguiente forma: `variable ~ 1`, que sería similar a definir un modelo lineal para sólo el intercepto.
 
 Una vez definido este objeto, que se va a usar en varias instancias, se construye el variograma experimental con la función `variogram`. Esta función tiene como argumentos son el objeto `gstat`, el intervalo de distancia (`width`) y la distancia máxima a la cual calcular la semivarianza (`cutoff`); y si recordamos la distancia máxima era `r apa(max(distancias),2)`.
 
@@ -652,7 +652,7 @@ varmod %>%
   kable_styling(full_width = F)
 ```
 
-Con el modelo ajustado se puede visualizar ést sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)). Para poder graficar el modelo ajustado es necesario definir la dirección a la cual se quiere estimar y para esto hay que definirlo en un vector unitario. Para simplificar este paso se creó la función `unit_vector`, que posteriormente se usa para crear un objeto (`variog.dir`) que va a contener la semivarianza ajustada para las direcciones definidas (en este caso el vector `d`).
+Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)). Para poder graficar el modelo ajustado es necesario definir la dirección a la cual se quiere estimar y para esto hay que definirlo en un vector unitario. Para simplificar este paso se creó la función `unit_vector`, que posteriormente se usa para crear un objeto (`variog.dir`) que va a contener la semivarianza ajustada para las direcciones definidas (en este caso el vector `d`).
 
 ```{r}
 unit_vector = function(th) {
@@ -764,7 +764,7 @@ metricas %>%
   kable_styling(full_width = F)
 ```
 
-Como se mencionó arriba las métricas son más útiles cuando se comparan modelos, pero para este caso se puede decir que presentan valores aceptables (Tabla \@ref(tab:xval-metrics-tab)), la $MSDR$ está muy cerca de 1, la correlación ($r$) es moderada-alta (`r apa(correl[[1]],3,F)`), el $RMSE$ es menor a la desviación estándar de los datos (`r apa(sqrt(S),3,T)`), e $MAPE$ es bajo cercano a 0, y el estadístico $G$ es positivo.
+Como se mencionó arriba las métricas son más útiles cuando se comparan modelos, pero para este caso se puede decir que presentan valores aceptables (Tabla \@ref(tab:xval-metrics-tab)), la $MSDR$ está muy cerca de 1, la correlación ($r$) es moderada-alta (`r apa(correl[[1]],3,F)`), el $RMSE$ es menor a la desviación estándar de los datos (`r apa(sqrt(S),3,T)`), el $MAPE$ es bajo cercano a 0, y el estadístico $G$ es positivo.
 
 ```{r xval-plots1, fig.cap='Relación entre los valores observados y predecidos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos.', out.width='80%'}
 gg.xval1 = ggplot(as.data.frame(kcv.ok), aes(var1.pred, observed)) + 
@@ -787,8 +787,6 @@ gg.xval2
 ```
 
 Las métricas tanto como los residuales indican que el modelo ajustado es un modelo apropiado para proceder con la interpolación.
-
-<!-- Los valores predecidos y los observados muestran buena correlación (*r* = `r apa(correl[[1]],3,F)`, `r cl*100`% IC [`r apa(correl[[2]],3,F)`, `r apa(correl[[3]],3,F)`]). La pendiente de la relación entre los valores predecidos y los observados es de `r CIbeta[[1]]`, `r cl*100`% IC [`r CIbeta[[2]]`, `r CIbeta[[3]]`]. El histograma de los residuales se observa simétrico y centrado en cero (0). Lo anterior indica un modelo apropiado. -->
 
 ## Interpolación (Kriging)
 
@@ -829,7 +827,7 @@ gg.var
 
 # Aplicación web
 
-Lo demostrado acá se encuentra implementado en una aplicación web [@garnier-villarreal2019c], la cual puede ser usada accediendo a esta dirección https://maximiliano-01.shinyapps.io/geostatistics/. La idea de la aplicación es llevar de la mano al usuario por los mismos pasos presentados acá, usando una interfaz más familiar, sin necesidad de que sepa usar **R** o lengaujes de programación, pero sí es necesario que se entienda y tenga conciencia de lo que conlleva un análisis geoestadístico de principio a fin. 
+Lo demostrado acá se encuentra implementado en una aplicación web [@garnier-villarreal2019c], la cual puede ser usada accediendo a esta dirección https://maximiliano-01.shinyapps.io/geostatistics/. La idea de la aplicación es llevar de la mano al usuario por los mismos pasos presentados acá, usando una interfaz más familiar, sin necesidad de que sepa usar **R** o lenguajes de programación, pero sí es necesario que se entienda y tenga conciencia de lo que conlleva un análisis geoestadístico de principio a fin. 
 
 La aplicación puede leer (cargar) archivos '.txt' o '.csv', donde el archivo tiene que contener por lo menos tres columnas: coordenada-x, coordenada-y, variable de interés. La Figura \@ref(fig:webapp) muestra la interfaz de la aplicación, donde el rectángulo amarillo resalta las viñetas (pasos) a seguir durante el análisis, a como se presentaron en este trabajo.
 
@@ -841,13 +839,13 @@ knitr::include_graphics(here('images','geostats-webapp.png'))
 
 Kriging es un método de interpolación, de varios disponibles, para obtener predicciones (estimaciones) en puntos donde no se tienen observaciones, y adicionalmente presenta diferentes variantes, por lo que no es único y depende del objetivo de investigación el cómo se implementa. Cuando es posible y adecuado usarlo, típicamente, brinda los mejores resultados, además de proporcionar un error sobre los valores estimados.
 
-Kriging como tal es uno de los posibles usos de la geoestadística, ya que es un paso (el último típicamente) durante un análisis geoestadístico donde el objetivo es la predicción (estimación) de una o varias variables en el espacio. Se menciona, brevemente, que otro posible producto de la geoestadística es la simulación, la cual puede ser más representativa en casos donde la hetereogeneidad, y no el comportamiento promedio, de la variable es el interés principal.
+Kriging como tal es uno de los posibles usos de la geoestadística, ya que es un paso (el último típicamente) durante un análisis geoestadístico donde el objetivo es la predicción (estimación) de una o varias variables en el espacio. Se menciona, brevemente, que otro posible producto de la geoestadística es la simulación, la cual puede ser más representativa en casos donde la heterogeneidad, y no el comportamiento promedio, de la variable es el interés principal.
 
 La geoestadística, como rama de la estadística espacial, se enfoca en la caracterización de procesos y variables que tienen una fuerte componente espacial, por lo que existe una dependencia entre las observaciones, a diferencia de la estadística clásica. 
 
 Este trabajo muestra los pasos, cuidados, y decisiones que hay que tomar durante un análisis geoestadístico típico, haciendo énfasis en que para obtener resultados válidos y confiables es necesario desarrollar estos pasos con criterio y no dejarlos a decisión de un programa de cómputo. Se recomienda que cuando se hace uso de Kriging se detalle el tipo, así como el modelo que se ajustó y sus parámetros. 
 
-El código presentado aquí puede ser copiado y utilizado libremente, y además se presenta de manera muy rápida una aplicación web que hace uso del mismo código, pero de una manera más amigable para quienes no se siente cómodos con lenguajes de programación.
+El código presentado aquí puede ser utilizado libremente, para mayor facilidad existe un repositorio en GitHub (https://github.com/maxgav13/intro_geostats) que contiene todo lo relacionado con este trabajo y que puede ser clonado o descargado para su uso. Además se presenta de manera muy rápida una aplicación web que hace uso del mismo código, pero de una manera más amigable para quienes no se siente cómodos con lenguajes de programación.
 
 # Referencias
 
