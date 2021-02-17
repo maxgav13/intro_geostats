@@ -1,0 +1,27 @@
+---
+title: "export_fig"
+output: html_document
+---
+
+F2 - g1 - 20 x 12
+F4 - g2 - 7 x 12
+F5 - g3 - 7 x 12
+F6 - g4 - 7 x 12
+F7 - g5 - 14 x 8.4
+F8 - g6 - 14 x 8.4
+F9 - g7 - 7 x 12
+F11 - g8 - 7 x 12
+F12 - p - 10 x 6
+F13 -  - 14 x 8.4
+
+```{r eval=FALSE, include=FALSE}
+ggsave(filename = "F11.tiff", 
+       plot = g8, 
+       dpi = 300,
+       width = 7, 
+       height = 12, 
+       units = "cm", 
+       type = 'cairo', 
+       compression = "lzw"
+       )
+```
