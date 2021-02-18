@@ -12,16 +12,19 @@ F8 - g6 - 14 x 8.4
 F9 - g7 - 7 x 12
 F11 - g8 - 7 x 12
 F12 - p - 10 x 6
-F13 -  - 14 x 8.4
+
+F13 - gg.hist - 14 x 8.4
+F14 - gg.map.pts - 14 x 8.4
 
 ```{r eval=FALSE, include=FALSE}
-ggsave(filename = "F11.tiff", 
-       plot = g8, 
+ggsave(filename = "F14.tiff", 
+       plot = gg.map.pts, 
+       path = here('figures'),
        dpi = 300,
-       width = 7, 
-       height = 12, 
-       units = "cm", 
-       type = 'cairo', 
-       compression = "lzw"
+       width = 14, 
+       height = 8, 
+       units = "cm",
+       # compression = "lzw",
+       type = 'quartz'
        )
 ```
