@@ -21,10 +21,12 @@ bibliography: ["bib/geostats.bib", "bib/packages.bib", "bib/knit.bib"]
 csl: csl/apa.csl
 link-citations: true
 output:
-  bookdown::word_document2:
-    df_print: kable
+  bookdown::html_document2:
     toc: false
     toc_depth: 2
+    theme: cosmo
+    number_sections: true
+    # dev: "tiff"
   distill::distill_article:
     toc_depth: 2
     df_print: kable
@@ -36,12 +38,10 @@ output:
       in_header: header.tex
   rticles::springer_article:
     df_print: kable
-  bookdown::html_document2:
+  bookdown::word_document2:
+    df_print: kable
     toc: false
     toc_depth: 2
-    theme: cosmo
-    number_sections: true
-    # dev: "tiff"
 always_allow_html: true
 ---
 
@@ -72,7 +72,7 @@ library(tidymodels)
 library(tidyverse)
 
 knitr::opts_chunk$set(
-  echo = TRUE,
+  echo = FALSE,
   message = FALSE,
   warning = FALSE,
   error = FALSE,
@@ -387,9 +387,9 @@ export(datos, here('data','datos.csv')) # exports point data
 
 Antes de iniciar con el análisis geoestadístico es necesario estudiar la variable, ver su distribución (si se aproxima a una distribución normal) para determinar si es necesaria alguna transformación, y por medio de la varianza se puede tener una idea aproximad de la meseta total del variograma.
 
-Primeramente se deben importar los datos en un data frame (tabla) al cual se le llama `datos`. En este caso la variable de interés es `z`. Una vez los datos están listos se procede a analizar la variable y ver su distribución como se muestra a continuación.
+Primeramente se deben importar los datos en un data frame (tabla) al cual se le va a llamar `datos`. En este caso la variable de interés es `z`. Una vez los datos están listos se procede a analizar la variable y ver su distribución como se muestra a continuación.
 
-```{r AED, fig.cap='Histograma de la variable. La línea roja corresponde con la media, y la curva azul con la curva de densidad empírica.'}
+```{r AED, echo=FALSE, fig.cap='Histograma de la variable. La línea roja corresponde con la media, y la curva azul con la curva de densidad empírica.'}
 datos = import(here('data','datos.csv'))
 
 myvar = 'z' # variable a modelar
@@ -416,11 +416,11 @@ gg.hist
 
 El resumen estadístico (Tabla \@ref(tab:AED)) y el histograma (Figura \@ref(fig:AED)) muestran que los datos tienen una distribución aproximadamente normal, donde la media y mediana son similares y el histograma presenta una forma general de campana, por lo que no es necesaria ninguna transformación.
 
-Como los datos iniciales están en una tabla, es necesario convertir estos datos en datos/objetos espaciales, para poder realizar operaciones y análisis previos al análisis geoestadístico.
+Como los datos iniciales están en una tabla, es necesario convertir estos datos en datos/objetos espaciales, para poder realizar operaciones y análisis espaciales, incluyendo el análisis geoestadístico..
 
-En este caso los datos tienen una grilla de coordenadas local la cual no corresponde con ningún sistema de coordenadas reconocido. De manera general se recomienda trabajar los datos en sistemas de coordenadas planas (x,y) por lo que si se tienen en geográficas (long, lat) se recomienda convertirlas a planas conforme la zona de estudio. Para esto se puede consultar @garnier-villarreal2020, donde se presenta un capítulo dedicado al trato de datos espaciales en **R**, y se indica como transformar los datos de un sistema de coordenadas a otro.
+En este caso los datos tienen una grilla de coordenadas local la cual no corresponde con ningún sistema de coordenadas reconocido, es arbritario. De manera general se recomienda trabajar los datos en sistemas de coordenadas planas (x,y) por lo que si se tienen en geográficas (long, lat) se recomienda convertirlas a planas conforme la zona de estudio, utilizando los códigos *epsg* respectivos. Para esto se puede consultar @garnier-villarreal2020, donde el capítulo 6 está dedicado al trato de datos espaciales en **R**, y se indica como transformar los datos de un sistema de coordenadas a otro.
 
-Para crear el objeto espacial se usa la función `st_as_sf` del paquete *sf* [@R-sf], donde los argumentos requeridos son los datos, las columnas donde están las coordenadas (x,y), y opcionalmente el código del sistema de coordenadas. Como en este caso los datos no corresponden con ninguna sistema de coordenadas se pone `NA`, pero si no se usaría el código epsg.
+Para crear el objeto espacial se usa la función `st_as_sf` del paquete *sf* [@R-sf], donde los argumentos requeridos son los datos, las columnas donde están las coordenadas (x,y), y opcionalmente el código del sistema de coordenadas (*epsg*). Como en este caso los datos no corresponden con ninguna sistema de coordenadas se pone `NA`.
 
 ```{r datos-sf}
 datos_sf = st_as_sf(datos, coords = 1:2, crs = NA) %>% 
@@ -430,7 +430,7 @@ datos_sp = as(datos_sf, 'Spatial')
 coordnames(datos_sp) = c('X','Y')
 ```
 
-Una vez transformados los datos a datos espaciales es buena práctica determinar las distancias entre los puntos, ya que como se explicó en la parte teórica, no es recomendado calcular el variograma experimental a más de la mitad de la distancia máxima entre puntos. El siguiente código calcula las distancias.
+Una vez transformados los datos a datos espaciales es buena práctica determinar las distancias entre los puntos, ya que como se explicó en la parte teórica, no es recomendado calcular el variograma experimental a más de la mitad de la distancia máxima entre puntos.
 
 ```{r distancias}
 dists = st_distance(datos_sf) %>% .[lower.tri(.)] %>% unclass()
@@ -439,13 +439,15 @@ names(distancias) = c('min', 'media', 'max')
 distancias
 ```
 
-Una forma de mostrar el área de influencia de los resultados es tener un polígono que encierra a los datos, ya que sería esta el área donde los resultados son realmente válidos. El siguiente código realiza el cálculo de dicho polígono.
+<!-- Una forma de mostrar el área de influencia de los resultados es tener un polígono que encierra a los datos, ya que sería esta el área donde los resultados son realmente válidos. El siguiente código realiza el cálculo de dicho polígono. -->
 
 ```{r outline}
 outline = st_convex_hull(st_union(datos_sf))
 ```
 
-Como se desea tener una superficie con datos interpolados (en puntos donde no se tiene muestra) es necesario generar una grilla a rellenar. Se pueden tener grillar regulares (rectangulares) o irregulares (conforme el polígono que encierra a los datos). El siguiente código crea estas grillas, generando objetos `stars` [@R-stars] que son similares a objetos `raster` [@R-raster] pero más versátiles ya que permiten tener arreglos espaciales más complejos y diversos.
+Como se desea tener una superficie con datos interpolados (en puntos donde no se tiene muestra) es necesario generar una grilla a rellenar. Se pueden tener grillar regulares (rectangulares) o irregulares (conforme un polígono que encierra a los datos). Para este caso se genera una grilla regular (`datosint`) y una irregular (`datosint2`).
+
+<!-- El siguiente código crea estas grillas, generando objetos `stars` [@R-stars] que son similares a objetos `raster` [@R-raster] pero más versátiles ya que permiten tener arreglos espaciales más complejos y diversos. -->
 
 ```{r grilla-interp}
 bb = st_bbox(datos_sf)
@@ -461,7 +463,7 @@ st_as_stars(matrix(0, length(dx), length(dy))) %>%
 datosint2 = st_crop(datosint, outline)
 ```
 
-Ya con los datos en formto espacial es bueno visualizar su distribución en el espacio para tener una idea preliminar de patrones que pueden presentar. La Figura \@ref(fig:dist-espacial) muestra la ubicación de los datos, donde los puntos se encuentran rellenados de acuerdo al valor de la variable.
+Ya con los datos en formato espacial es bueno visualizar su distribución en el espacio para tener una idea preliminar de patrones que pueden presentar. La Figura \@ref(fig:dist-espacial) muestra la ubicación de los datos, donde los puntos se encuentran rellenados de acuerdo al valor de la variable.
 
 ```{r dist-espacial, fig.cap='Mapa de puntos mostrando la distribución espacial de la variable.'}
 gg.map.pts = ggplot() + 
@@ -475,7 +477,7 @@ gg.map.pts = ggplot() +
 gg.map.pts
 ```
 
-El siguiente código no se ejecuta, ya que genera un mapa interactivo que no se puede desplegar aquí, pero se incluye para referencia y en caso de que se quiera utilizar. Para este mapa se usa el paquete *mapview* [@R-mapview] y para los colores se usa el paquete *RColorBrewer* [@R-RColorBrewer].
+<!-- El siguiente código no se ejecuta, ya que genera un mapa interactivo que no se puede desplegar aquí, pero se incluye para referencia y en caso de que se quiera utilizar. Para este mapa se usa el paquete *mapview* [@R-mapview] y para los colores se usa el paquete *RColorBrewer* [@R-RColorBrewer]. -->
 
 ```{r eval=F}
 mapview(outline, alpha.regions = 0, layer.name='Borde', 
@@ -493,9 +495,9 @@ Habiendo estudiado la variable y hecho los pasos iniciales de manipulación, an�
 
 El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Aquí se empieza a hacer uso de *gstat*, donde es conveniente crear un objeto `gstat` en el cual se definen los datos a usar y la variable de interés. Para definir la variable de interés se usa la sintaxis de fórmula de la siguiente forma: `variable ~ 1`, que sería similar a definir un modelo lineal para sólo el intercepto.
 
-Una vez definido este objeto, que se va a usar en varias instancias, se construye el variograma experimental con la función `variogram`. Esta función tiene como argumentos son el objeto `gstat`, el intervalo de distancia (`width`) y la distancia máxima a la cual calcular la semivarianza (`cutoff`); y si recordamos la distancia máxima era `r apa(max(distancias),2)`.
+Una vez definido este objeto, que se va a usar en varias instancias, se construye el variograma experimental con la función `variogram`. Esta función tiene como argumentos el objeto `gstat`, el intervalo de distancia deseado (`width`) y la distancia máxima a la cual calcular la semivarianza (`cutoff`); y si recordamos la distancia máxima era `r apa(max(distancias),2)`, por lo que se escoge un valor ligeramente inferior a la mitad.
 
-```{r eval=TRUE}
+```{r eval=TRUE, echo=TRUE}
 myformula = as.formula(paste(myvar,'~1'))
 g = gstat(formula = myformula, 
           data = datos_sf) # objeto gstat para hacer geoestadistica
@@ -521,7 +523,7 @@ Una vez analizado el variograma omnidireccional se procede a determinar si exist
 
 Para el mapa de la superficie de variograma los argumentos necesarios son la extensión (`cutoff`, misma que le variograma experimental), el ancho del pixel (`width`, no es el mismo que para el variograma, por lo general mayor), y definir que es un mapa (`map=TRUE`).
 
-```{r eval=TRUE}
+```{r eval=TRUE, echo=TRUE}
 map.vgm <- variogram(g, 
                      width = 10, 
                      cutoff = 60, 
@@ -539,7 +541,7 @@ gg.map.exp
 
 Para los variogramas direccionales hay que definir los argumentos de las direcciones (`alpha`) y la tolerancia angular (`tol.hor`), donde lo más usado son direcciones cada 45° y la tolerancia angular es la mitad del intervalo entre direcciones.
 
-```{r eval=TRUE}
+```{r eval=TRUE, echo=TRUE}
 # con direcciones y tolerancia angular
 d = c(0,45,90,135) # direcciones
 dat.vgm2 = variogram(g, 
@@ -567,7 +569,7 @@ gg.dir.exp = ggplot(dat.vgm2.gg,aes(x = dist, y = gamma,
 gg.dir.exp
 ```
 
-Analizando el mapa y los variogramas direccionales se concluye que no muestran señas de anisotropía, por lo que el modelado se puede continuar con el variograma omnidireccional.
+Analizando el mapa y los variogramas direccionales se concluye que no muestran señas de anisotropía, no hay una dirección preferncial que presente una continuidad importante, por lo que el modelado se puede continuar con el variograma omnidireccional.
 
 ### Ajuste de modelo de variograma
 
@@ -575,7 +577,7 @@ Una vez creado el variograma experimental es necesario ajustarle un modelo para 
 
 Usando el variograma omnidireccional (Figura \@ref(fig:variog-omni)), se puede estimar una pepita de aproximadamente 0.25, una meseta parcial de 0.5, un rango de 30, y se puede usar un modelo tipo esférico ('Sph'). Lo anterior se define de la siguiente manera:
 
-```{r params}
+```{r params, echo=TRUE}
 pep = .25 # pepita
 meseta = .5 # meseta parcial
 mod = "Sph" # modelo a ajustar (esférico)
@@ -592,17 +594,21 @@ show.vgms()
 knitr::include_graphics(here('images','gstat-mods.png'))
 ```
 
-Una vez definidos los valores iniciales se usa la función `fit.variogram` para realizar el ajuste automático. Los argumentos de la función son el variograma experimental y el modelo que se define por medio de la función `vgm`. Con el modelo ajustado (Tabla \@ref(tab:ajuste-tab)) se puede calcular un error del ajuste inicial, pero es más confiable el que se obtiene usando la validación cruzada, ya que el obtenido acá es un valor optimista.
+Una vez definidos los valores iniciales se usa la función `fit.variogram` para realizar el ajuste automático. Los argumentos de la función son el variograma experimental y el modelo que se define por medio de la función `vgm`, usando los valores iniciales definidos anteriormente.
 
-```{r ajuste, eval=TRUE}
-dat.fit = fit.variogram(dat.vgm, model = vgm(meseta, mod, rango, pep))
+```{r ajuste, eval=TRUE, echo=TRUE}
+dat.fit = fit.variogram(dat.vgm, 
+                        model = vgm(psill = meseta, 
+                                    model = mod, 
+                                    range = rango, 
+                                    nugget = pep))
+
 fit.rmse = sqrt(attributes(dat.fit)$SSErr/(nrow(datos))) # error del ajuste
+
 varmod = dat.fit # modelo ajustado
 ```
 
-```{r}
-fit.rmse # error del ajuste
-```
+Con el modelo ajustado (Tabla \@ref(tab:ajuste-tab)) se puede calcular un error del ajuste inicial ($RMSE=`r apa(fit.rmse,3)`$), pero es más confiable el que se obtiene usando la validación cruzada, ya que el obtenido acá es un valor optimista. Lo anterior se da puesto que se calcula con respecto a los datos que se realizó el ajuste y esto simpre va a resultar en error menor que cuando se usa el modelo en datos no observados, que es lo que se quiere [@kuhn2013; @witten2011].
 
 ```{r eval=FALSE}
 varmod
@@ -619,7 +625,11 @@ varmod %>%
   kable_styling(full_width = F)
 ```
 
-Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)). Para poder graficar el modelo ajustado es necesario definir la dirección a la cual se quiere estimar y para esto hay que definirlo en un vector unitario. Para simplificar este paso se creó la función `unit_vector`, que posteriormente se usa para crear un objeto (`variog.dir`) que va a contener la semivarianza ajustada para las direcciones definidas (en este caso el vector `d`).
+Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)). 
+
+<!-- Para poder graficar el modelo ajustado es necesario definir la dirección a la cual se quiere estimar y para esto hay que definirlo en un vector unitario.  -->
+
+<!-- Para simplificar este paso se creó la función `unit_vector`, que posteriormente se usa para crear un objeto (`variog.dir`) que va a contener la semivarianza ajustada para las direcciones definidas (en este caso el vector `d`). -->
 
 ```{r}
 unit_vector = function(th) {
@@ -678,16 +688,18 @@ gg.dir.fit
 
 ### Validación cruzada
 
-Para evaluar de manera más realista el ajuste de cualquier modelo es mejor usar la validación cruzada. Es en este paso que se podrían probar diferentes modelos, donde se obtienen las métricas de ajuste de un modelo, se ajusta un nuevo modelo y se obtienen sus métricas de ajuste, y así iterativamente. Una vez ajustados diferentes modelos y con sus diferentes métricas se puede tener un criterio más robusto de cuál modelo se ajusta mejor a los datos. Las métricas usadas aquí son el error cuadrático medio ($RMSE$), la razón de desviación cuadrática media ($MSDR$), y la correlación ($r$) entre los valores observados y predecidos, donde se busca es determinar qué tan similares son los valores entre si (Figura \@ref(fig:xval-plots) **A**).
+Para evaluar de manera más realista el ajuste de cualquier modelo es mejor usar la validación cruzada. Es en este paso que se podrían probar diferentes modelos, donde se obtienen las métricas de ajuste de un modelo, se ajusta un nuevo modelo y se obtienen sus métricas de ajuste, y así iterativamente. Una vez ajustados diferentes modelos y con sus diferentes métricas se puede tener un criterio más robusto de cuál modelo se ajusta mejor a los datos. 
 
-Para realizar la validación cruzada se usa la función `krige.cv`, con los argumentos de la fórmula, datos, y el modelo ajustado.
+Las métricas usadas aquí son las que se introdujeron anteriormente: el error cuadrático medio ($RMSE$), la razón de desviación cuadrática media ($MSDR$), el error porcentual absoluto medio ($MAPE$), y el estadístico de bondad de predicción ($G$). Adicionalmente se estima la correlación ($r$) entre los valores observados y predecidos, donde lo que se busca es determinar qué tan similares son los valores entre si (Figura \@ref(fig:xval-plots) **A**).
 
-```{r xval, eval=TRUE, message=FALSE}
+Para realizar la validación cruzada se usa la función `krige.cv`, con los argumentos de la fórmula, datos, y el modelo ajustado, y usando el método *LOO* por defecto. El objeto resultante va a contener los valores predecidos (`var1.pred`), la varianza de las predicciones (`var1.var`), los valores observados (`observed`), y los residuales (`residual`).
+
+```{r xval, eval=TRUE, message=FALSE, echo=TRUE}
 kcv.ok = krige.cv(myformula, 
                   locations = datos_sf, model = varmod)
 ```
 
-El siguiente bloque de código muestra cómo se calculan las diferentes métricas, ya sea usando funciones ya disponibles o escribiendo la fórmula necesaria.
+<!-- El siguiente bloque de código muestra cómo se calculan las diferentes métricas, ya sea usando funciones ya disponibles o escribiendo la fórmula necesaria. -->
 
 ```{r xval-metrics, include=TRUE}
 cl = .95 # nivel de confianza
@@ -731,7 +743,9 @@ metricas %>%
   kable_styling(full_width = F)
 ```
 
-Como se mencionó arriba las métricas son más útiles cuando se comparan modelos, pero para este caso se puede decir que presentan valores aceptables (Tabla \@ref(tab:xval-metrics-tab)), la $MSDR$ está muy cerca de 1, la correlación ($r$) es moderada-alta (`r apa(correl[[1]],3,F)`), el $RMSE$ es menor a la desviación estándar de los datos (`r apa(sqrt(S),3,T)`), el $MAPE$ es bajo cercano a 0, y el estadístico $G$ es positivo.
+Como se mencionó arriba las métricas son más útiles cuando se comparan modelos, pero para este caso, usando solo el modelo esférico, se puede decir que presentan valores aceptables (Tabla \@ref(tab:xval-metrics-tab)): la $MSDR$ está muy cerca de 1, la correlación ($r$) es moderada-alta, el $RMSE$ es menor a la desviación estándar de los datos (`r apa(sqrt(S),3,T)`), el $MAPE$ es bajo y cercano a 0, y el estadístico $G$ es positivo. 
+
+Si recordamos el error del ajuste inicial sobre los datos que se realizó el ajuste fue `r apa(fit.rmse,3)`, que como se puede observar es mucho menor al $RMSE$ de la validación cruzada `r apa(xval.rmse,3)` de ahí que se le definiera como optimista.
 
 ```{r xval-plots1, fig.cap='Relación entre los valores observados y predecidos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos.', out.width='80%'}
 gg.xval1 = ggplot(as.data.frame(kcv.ok), aes(var1.pred, observed)) + 
@@ -756,24 +770,26 @@ gg.xval = gg.xval1 + gg.xval2 + plot_annotation(tag_levels = 'A')
 gg.xval
 ```
 
-Adicionalmente se pueden explorar los residuales ya que idealmente se esperaría que presenten una distribución normal. Lo anterior se puede apreciar en la Figura \@ref(fig:xval-plots) **B**, donde le histograma aunque no es perfectamente normal, no presenta valores extremos y se encuentra moderadamente centrado alrededor de 0.
+Adicionalmente se pueden explorar los residuales ya que idealmente se esperaría que presenten una distribución normal. Lo anterior se puede apreciar en la Figura \@ref(fig:xval-plots) **B**, donde el histograma aunque no es perfectamente normal, no presenta una asimetría importante (menor a 1: `r apa(Skew(kcv.ok$residual),3)`) y se encuentra moderadamente centrado alrededor de 0.
 
 Las métricas tanto como los residuales indican que el modelo ajustado es un modelo apropiado para proceder con la interpolación.
 
 ## Interpolación (Kriging)
 
-Para recalcar nuevamente, el análisis geoestadístico es un proceso que conlleva el calculo del variograma, el ajuste de un modelo, la validación del modelo, y por último la interpolación mediante Kriging. Si no se realizan con cuidado los pasos el resultado de la interpolación puede no tener validez o sentido.
+Para recalcar nuevamente, el análisis geoestadístico es un proceso que conlleva el calculo del variograma, el ajuste de un modelo, la validación del modelo a usar, y por último la interpolación mediante Kriging. Si no se realizan con cuidado los pasos el resultado de la interpolación puede no tener validez o sentido.
 
-La interpolación por Kriging es se realiza por medio de la función `krige`, la cual tiene como argumentos la fórmula, los datos, la grilla a interpolar, y el modelo ajustado seleccionado. El resultado en objeto `stars`, igual al formato de la grilla a interpolar, con dos atributos o columnas: los valores predecidos (estimados) en `var1.pred` y la varianza (error) de la predicción (estimación) en `var1.var`.
+La interpolación por Kriging es se realiza por medio de la función `krige`, la cual tiene como argumentos la fórmula, los datos, la grilla a interpolar, y el modelo ajustado seleccionado. El resultado va a contener dos atributos o columnas: los valores predecidos (estimados) en `var1.pred` y la varianza (error) de la predicción (estimación) en `var1.var`.
 
-```{r kriging, eval=TRUE}
-ok = krige(as.formula(paste(myvar,'~1')), 
+```{r kriging, eval=TRUE, echo=TRUE}
+ok = krige(myformula, 
            locations = datos_sp,
            newdata = datosint2, 
            model = varmod)
 ```
 
-Los mapas finales tanto de la predicción (estimación) como de la varianza (error de estimación) se presentan en la Figura \@ref(fig:mapas-kriging). El el argumento más importante para la visualización de los resultados es el `aes(fill)` donde se define el atributo a visualizar (predicción o varianza). En el mapa de la predicción se observa una concentración de valores bajos en el sector derecho, y dos zonas de contración de valores altos en el medio del área. El mapa de la varianza va a presentar los valores más bajos en los puntos de muestreo y valores mayores en puntos más distantes de los muestreados.
+Los mapas finales tanto de la predicción (estimación) como de la varianza (error de estimación) se presentan en la Figura \@ref(fig:mapas-kriging). En el mapa de la predicción se observa una concentración de valores bajos en el sector derecho, y dos zonas de contración de valores altos en el medio del área. El mapa de la varianza va a presentar los valores más bajos en los puntos de muestreo y valores mayores en puntos más distantes de los muestreados.
+
+<!-- El argumento más importante para la visualización de los resultados es el `aes(fill)` donde se define el atributo a visualizar (predicción o varianza). -->
 
 ```{r mapa-pred, warning=FALSE, fig.cap='Mapa de predicción de la variable de interés.', out.width='90%'}
 gg.pred = ggplot() + 
@@ -820,7 +836,7 @@ La geoestadística, como rama de la estadística espacial, se enfoca en la carac
 
 Este trabajo muestra los pasos, cuidados, y decisiones que hay que tomar durante un análisis geoestadístico típico, haciendo énfasis en que para obtener resultados válidos y confiables es necesario desarrollar estos pasos con criterio y no dejarlos a decisión de un programa de cómputo. Se recomienda que cuando se hace uso de Kriging se detalle el tipo, así como el modelo que se ajustó y sus parámetros. 
 
-El código presentado aquí puede ser utilizado libremente, para mayor facilidad existe un repositorio en GitHub (https://github.com/maxgav13/intro_geostats) que contiene todo lo relacionado con este trabajo y que puede ser clonado o descargado para su uso. Además se presenta de manera muy rápida una aplicación web que hace uso del mismo código, pero de una manera más amigable para quienes no se siente cómodos con lenguajes de programación.
+El código presentado aquí puede ser utilizado libremente, y para mayor facilidad existe un repositorio en GitHub (https://github.com/maxgav13/intro_geostats) que contiene todo lo relacionado con este trabajo y que puede ser clonado o descargado para su uso. En el repositorio se puede consultar el código presentado aquí y más: el usado para las figuras y otros pasos intermedios que no se muestran acá para mantener la cantidad de código en lo mínimo y sin abrumar al lector. Además se presenta de manera muy rápida una aplicación web que hace uso del mismo código, pero de una manera más amigable para quienes no se siente cómodos con lenguajes de programación.
 
 # Referencias
 
