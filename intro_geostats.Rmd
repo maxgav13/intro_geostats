@@ -39,6 +39,7 @@ output:
   rticles::springer_article:
     df_print: kable
   bookdown::word_document2:
+    reference_docx: 'template.docx'
     df_print: kable
     toc: false
     toc_depth: 2
@@ -282,15 +283,15 @@ knitr::include_graphics(here('images','variog-anis.png'))
 
 ### Validación cruzada
 
-La mejor forma de evaluar el ajuste de un modelo específico sobre el variograma experimental es por medio de la validación cruzada. De manera general lo que se hace es dejar por fuera una o varias de las observaciones y con el modelo ajustado se predice el valor de la variable para esas observaciones [@chiles1999; @goovaerts1997; @isaaks1989; @oliver2014c; @webster2007]. 
+Dado que que objetivo de la interpolación es predecir valores en puntos donde no se tiene información, la mejor forma de evaluar el ajuste de un modelo específico sobre el variograma experimental es por medio de la validación cruzada. De manera general lo que se hace es dejar por fuera una o varias de las observaciones, se re-ajusta el modelo seleccionado, y se predice el valor de la variable para esas observaciones que se dejaron porfuera, repitiendose el proceso hasta tener una predicción para todos los puntos [@chiles1999; @goovaerts1997; @isaaks1989; @oliver2014c; @webster2007; @hastie2008; @james2013; @kuhn2013; @witten2011]. 
 
-El tipo de validación cruzada más usado es *LOO* (leave-one-out), donde se deja por fuera una observación a la vez y se predice el valor de la variable para cada observación por separado [@goovaerts1997; @isaaks1989; @oliver2014c; @webster2007]. El paquete *gstat* ofrece esta opción (por defecto) y la opción de *K-Fold*. En *K-Fold* se escoge una cantidad de grupos (K) en los que se dividen las observaciones (típicamente 5 o 10) y se deja un grupo de observaciones por fuera cada vez, donde se predice el valor de variable para todas las observaciones del grupo; este proceso se repite K veces.
+El tipo de validación cruzada más usado es *LOO* (leave-one-out), donde se deja por fuera una observación a la vez, se re-ajusta el modelo y se predice el valor de la variable para cada observación por separado [@goovaerts1997; @isaaks1989; @oliver2014c; @webster2007]. El paquete *gstat* ofrece esta opción (por defecto) y la opción de *K-Fold*. En *K-Fold* se escoge una cantidad de grupos (*K*) en los que se dividen las observaciones (típicamente 5 o 10) y se deja un grupo de observaciones por fuera cada vez, se re-ajusta el modelo, se predice el valor de la variable para todas las observaciones del grupo que se dejó por fuera, y este proceso se repite *K* veces hasta tener predicciones para todos los puntos [@hastie2008; @james2013; @kuhn2013; @witten2011].
 
-Una vez realizado el ajuste y la validación cruzada del mismo se obtienen valores predecidos y observados para cada punto. Con esta información se pueden usar diferentes métricas, donde lo ideal sería comparar cada una de estas métricas para diferentes modelos ajustados, y se escogería el modelo que obtenga mejores métricas [@chiles1999; @goovaerts1997; @isaaks1989; @oliver2014c; @webster2007].
+Una vez realizado el ajuste y la validación cruzada del modelo se obtienen valores predecidos y observados para cada punto. Con esta información se pueden usar diferentes métricas, donde lo ideal sería comparar cada una de estas métricas para diferentes modelos ajustados, y se escogería el modelo que obtenga mejores métricas [@chiles1999; @goovaerts1997; @isaaks1989; @oliver2014c; @webster2007].
 
 Dentro de las métrica más usadas están [@oliver2014c; @webster2007; @yao2013po]: 
 
-En estas métricas $N$ es el total de observaciones, $Y_i$ es el valor observado en el punto $i$, $\hat{Y_i}$ es el valor predecido en el punto $i$, $s^2_{ei}$ es el error/varianza de Kriging, y $\bar{Y}$ es la media (promedio) de la variable.
+En estas métricas $N$ es el total de observaciones, $Y_i$ es el valor observado en el punto $i$, $\hat{Y_i}$ es el valor predecido en el punto $i$, $s^2_{ei}$ es el error/varianza de la predicción, y $\bar{Y}$ es la media (promedio) de la variable.
 
 - Error medio ($ME$): El error corresponde con los residuales de lo observado menos lo predecido, una vez se tienen estos valores se les calcula la media e idealmente se esperaría obtener un valor cercano a 0. Se calcula mediante la Ecuación \@ref(eq:xval-me) y al comparar modelos se escogería el modelo que presente un valor más cercano a 0.
 
@@ -327,9 +328,11 @@ En estas métricas $N$ es el total de observaciones, $Y_i$ es el valor observado
   (\#eq:xval-g)
 \end{equation}
 
+Todas estas métricas, excepto la $MSDR$, se pueden aplicar para cualquier modelo de cualquier método de interpolación. Para la $MSDR$ se ocupa que el método brinde una varianza de la predicción y ésta es una de las fortalezas de Kriging sobre la mayoría de métodos. Como recomendación, al comparar modelos si hay valores muy similares de la mayoría de las métricas se recomienda usar las métricas de $MSDR$ y el estadístico $G$ como las más importantes.
+
 ### Kriging
 
-Kriging es un método de interpolación (estimación) donde la idea es obtener valores de la variable en lugares donde no se obtuvo muestra. El método hace uso del modelo ajustado para asignar pesos a los puntos a interpolar dependiendo de la distancia entre ellos. Los puntos más cercanos van a presentar valores menores de semivarianza (mayor peso) y los puntos más lejanos valores mayores de semivarianza (menor peso), y si hay puntos que caen fuera del rango estos van a tener influencia mínima o nula [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. Lo anterior se presenta de manera gráfica en la Figura \@ref(fig:kriging-pesos).
+Kriging es un método de interpolación (estimación), por lo que la idea es obtener valores de la variable en lugares donde no se obtuvo muestra. El método hace uso del modelo ajustado para asignar pesos a los puntos a interpolar dependiendo de la distancia entre ellos. Los puntos más cercanos van a presentar valores menores de semivarianza (mayor peso) y los puntos más lejanos valores mayores de semivarianza (menor peso), y si hay puntos que caen fuera del rango estos van a tener influencia mínima o nula [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. Lo anterior se presenta de manera gráfica en la Figura \@ref(fig:kriging-pesos).
 
 (ref:kriging-pesos) Visualización del proceso de interpolación mediante Kriging, donde para el punto a interpolar (D), el punto que está más cercano (C) tiene más peso (influencia, baja semivarianza), y el punto más lejano (A) prácticamente no tiene peso ya que cae fuera del rango. Tomado de @mckillup2010.
 
@@ -399,11 +402,12 @@ descr(datos[myvar],style = 'rmarkdown') %>%
   mutate(Estadistica = row.names(.)) %>% 
   relocate(Estadistica) %>% 
   slice(-c(12,13,15)) %>% 
-  kable(digits = 2,
+  kable(col.names = c('Estadística','Valor'),
+        digits = 2,
         format = 'simple',
-        caption = 'Resumen estadístico de la variable.')
+        caption = 'Resumen estadístico de la variable "z".')
 
-(S = var(datos[[myvar]])) # varianza de la variable
+S = var(datos[[myvar]]) # varianza de la variable
 
 gg.hist = ggplot(datos, aes_string(myvar)) + 
   geom_histogram(aes(y = stat(density)), bins = 10, 
@@ -414,13 +418,13 @@ gg.hist = ggplot(datos, aes_string(myvar)) +
 gg.hist
 ```
 
-El resumen estadístico (Tabla \@ref(tab:AED)) y el histograma (Figura \@ref(fig:AED)) muestran que los datos tienen una distribución aproximadamente normal, donde la media y mediana son similares y el histograma presenta una forma general de campana, por lo que no es necesaria ninguna transformación.
+El resumen estadístico (Tabla \@ref(tab:AED)) y el histograma (Figura \@ref(fig:AED)) muestran que los datos tienen una distribución aproximadamente normal, donde la media y mediana son similares y el histograma presenta una forma general de campana, por lo que no es necesaria ninguna transformación. La varianza de la variable es `r apa(S,3)`, lo que brinda una guía de la posible meseta total del variograma.
 
-Como los datos iniciales están en una tabla, es necesario convertir estos datos en datos/objetos espaciales, para poder realizar operaciones y análisis espaciales, incluyendo el análisis geoestadístico..
+Como los datos iniciales están en una tabla, es necesario convertir estos datos en datos/objetos espaciales, para poder realizar operaciones y análisis espaciales, incluyendo el análisis geoestadístico.
 
 En este caso los datos tienen una grilla de coordenadas local la cual no corresponde con ningún sistema de coordenadas reconocido, es arbritario. De manera general se recomienda trabajar los datos en sistemas de coordenadas planas (x,y) por lo que si se tienen en geográficas (long, lat) se recomienda convertirlas a planas conforme la zona de estudio, utilizando los códigos *epsg* respectivos. Para esto se puede consultar @garnier-villarreal2020, donde el capítulo 6 está dedicado al trato de datos espaciales en **R**, y se indica como transformar los datos de un sistema de coordenadas a otro.
 
-Para crear el objeto espacial se usa la función `st_as_sf` del paquete *sf* [@R-sf], donde los argumentos requeridos son los datos, las columnas donde están las coordenadas (x,y), y opcionalmente el código del sistema de coordenadas (*epsg*). Como en este caso los datos no corresponden con ninguna sistema de coordenadas se pone `NA`.
+Para crear el objeto espacial se usa la función `st_as_sf` del paquete *sf* [@R-sf], donde los argumentos requeridos son los datos, las columnas donde están las coordenadas (x,y), y opcionalmente el código del sistema de coordenadas (*epsg*). Como en este caso los datos no corresponden con ninguna sistema de coordenadas se usa `NA`.
 
 ```{r datos-sf}
 datos_sf = st_as_sf(datos, coords = 1:2, crs = NA) %>% 
@@ -430,14 +434,14 @@ datos_sp = as(datos_sf, 'Spatial')
 coordnames(datos_sp) = c('X','Y')
 ```
 
-Una vez transformados los datos a datos espaciales es buena práctica determinar las distancias entre los puntos, ya que como se explicó en la parte teórica, no es recomendado calcular el variograma experimental a más de la mitad de la distancia máxima entre puntos.
-
 ```{r distancias}
 dists = st_distance(datos_sf) %>% .[lower.tri(.)] %>% unclass()
 distancias = signif(c(min(dists), mean(dists), max(dists)),6) # rango de distancias
 names(distancias) = c('min', 'media', 'max') 
-distancias
+# distancias
 ```
+
+Una vez transformados los datos a datos espaciales es buena práctica determinar las distancias entre los puntos, ya que como se explicó en la parte teórica, no es recomendado calcular el variograma experimental a más de la mitad de la distancia máxima entre puntos. Haciendo este paso se obtiene que la distancia máxima es de `r apa(distancias[3],2)` m.
 
 <!-- Una forma de mostrar el área de influencia de los resultados es tener un polígono que encierra a los datos, ya que sería esta el área donde los resultados son realmente válidos. El siguiente código realiza el cálculo de dicho polígono. -->
 
@@ -493,7 +497,7 @@ Habiendo estudiado la variable y hecho los pasos iniciales de manipulación, an�
 
 ### Variograma experimental
 
-El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Aquí se empieza a hacer uso de *gstat*, donde es conveniente crear un objeto `gstat` en el cual se definen los datos a usar y la variable de interés. Para definir la variable de interés se usa la sintaxis de fórmula de la siguiente forma: `variable ~ 1`, que sería similar a definir un modelo lineal para sólo el intercepto.
+El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Aquí se empieza a hacer uso de *gstat*, donde es conveniente crear un objeto `gstat` en el cual se definen los datos a usar y la variable de interés. Para definir la variable de interés se usa la sintaxis de fórmula de la siguiente forma: `variable ~ 1`, que sería similar a definir un modelo lineal para sólo el intercepto. En este caso, y para facilidad, se guardó el nombre de la variable ('z') en el objeto `myvar`.
 
 Una vez definido este objeto, que se va a usar en varias instancias, se construye el variograma experimental con la función `variogram`. Esta función tiene como argumentos el objeto `gstat`, el intervalo de distancia deseado (`width`) y la distancia máxima a la cual calcular la semivarianza (`cutoff`); y si recordamos la distancia máxima era `r apa(max(distancias),2)`, por lo que se escoge un valor ligeramente inferior a la mitad.
 
@@ -548,10 +552,11 @@ dat.vgm2 = variogram(g,
                      alpha = d,
                      tol.hor = 22.5, 
                      cutoff = 60) 
+```
 
+```{r}
 dat.vgm2.gg = dat.vgm2 %>% 
-  mutate(dir.hor = factor(dir.hor, labels = as.character(d))) 
-
+  mutate(dir.hor = factor(dir.hor, labels = as.character(d)))
 ```
 
 ```{r variog-dir, fig.cap='Variogramas experimentales direccionales cada 45°. La línea roja punteada representa la varianza de la variable, lo que se aproxima a la meseta total.', out.width='90%'}
@@ -604,14 +609,12 @@ dat.fit = fit.variogram(dat.vgm,
                                     nugget = pep))
 
 fit.rmse = sqrt(attributes(dat.fit)$SSErr/(nrow(datos))) # error del ajuste
-
-varmod = dat.fit # modelo ajustado
 ```
 
-Con el modelo ajustado (Tabla \@ref(tab:ajuste-tab)) se puede calcular un error del ajuste inicial ($RMSE=`r apa(fit.rmse,3)`$), pero es más confiable el que se obtiene usando la validación cruzada, ya que el obtenido acá es un valor optimista. Lo anterior se da puesto que se calcula con respecto a los datos que se realizó el ajuste y esto simpre va a resultar en error menor que cuando se usa el modelo en datos no observados, que es lo que se quiere [@kuhn2013; @witten2011].
+El modelo ajustado (Tabla \@ref(tab:ajuste-tab)) se puede usar para calcular un error del ajuste inicial ($RMSE_{ajuste}=`r apa(fit.rmse,3)`$), pero es más confiable el que se obtiene usando la validación cruzada, ya que el obtenido acá es un valor optimista. Lo anterior se da puesto que se calcula con respecto a los datos que se realizó el ajuste (toda la información disponible) y esto simpre va a resultar en error menor que cuando se usa el modelo en datos no observados [@hastie2008; @james2013; @kuhn2013; @witten2011], que es lo que realmente se quiere.
 
-```{r eval=FALSE}
-varmod
+```{r eval=TRUE}
+varmod = dat.fit # modelo ajustado
 ```
 
 ```{r ajuste-tab, echo=FALSE}
@@ -624,6 +627,8 @@ varmod %>%
         caption = 'Modelo ajustado al variograma experimental') %>% 
   kable_styling(full_width = F)
 ```
+
+El modelo ajustado de la Tabla \@ref(tab:ajuste-tab) se puede interpretar así: el efecto pepita ('Nug') (que como es el intercepto solo aporta información a la semivarianza y no al rango) aporta `r apa(varmod$psill[1],3)` a la semivarianza ($C_0=`r apa(varmod[1,2],3)`$); el modelo esférico ('Sph') aporta `r apa(varmod$psill[2],3)` a la semivarianza ($C_1=`r apa(varmod[2,2],3)`$), con lo que la meseta tota es $S=C_0+C_1=`r apa(sum(varmod[1:2,2]),3)`$, y el rango del modelo esférico es $a=`r apa(varmod[2,3],2)`$.
 
 Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)). 
 
@@ -745,7 +750,7 @@ metricas %>%
 
 Como se mencionó arriba las métricas son más útiles cuando se comparan modelos, pero para este caso, usando solo el modelo esférico, se puede decir que presentan valores aceptables (Tabla \@ref(tab:xval-metrics-tab)): la $MSDR$ está muy cerca de 1, la correlación ($r$) es moderada-alta, el $RMSE$ es menor a la desviación estándar de los datos (`r apa(sqrt(S),3,T)`), el $MAPE$ es bajo y cercano a 0, y el estadístico $G$ es positivo. 
 
-Si recordamos el error del ajuste inicial sobre los datos que se realizó el ajuste fue `r apa(fit.rmse,3)`, que como se puede observar es mucho menor al $RMSE$ de la validación cruzada `r apa(xval.rmse,3)` de ahí que se le definiera como optimista.
+Si recordamos el error del ajuste inicial sobre los datos que se realizó el ajuste fue $RMSE_{ajuste}=`r apa(fit.rmse,3)`$, que como se puede observar es mucho menor al error de la validación cruzada $RMSE_{xval}=`r apa(xval.rmse,3)`$, de ahí que se le definiera como optimista, y sea este error de la validación cruzada un mejor indicador de la capacidad predictiva del modelo seleccionado.
 
 ```{r xval-plots1, fig.cap='Relación entre los valores observados y predecidos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos.', out.width='80%'}
 gg.xval1 = ggplot(as.data.frame(kcv.ok), aes(var1.pred, observed)) + 
