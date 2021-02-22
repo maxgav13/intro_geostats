@@ -1,0 +1,529 @@
+---
+title: "Material extra: Análisis geoestadístico resumido mostrando todo el código empleado"
+author: 
+  - name: "Maximiliano Garnier-Villarreal"
+    affiliation: 'Escuela Centroamericana de Geología, Universidad de Costa Rica'
+    email: 'maximiliano.garniervillarreal@ucr.ac.cr'
+# date: "`r format(Sys.Date(), '%d %B %Y')`"
+lang: es
+bibliography: ["bib/all.bib"]
+# biblio-style: apalike2
+csl: csl/apa.csl
+# documentclass: "apa6"
+# classoption: "man"
+link-citations: true
+output:
+  bookdown::html_document2:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: cosmo
+    number_sections: true
+    # dev: "tiff"
+  distill::distill_article:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    df_print: kable
+  bookdown::pdf_document2:
+    df_print: kable
+    number_sections: false
+    toc: false
+    includes:
+      in_header: header.tex
+  bookdown::word_document2:
+    reference_docx: 'template.docx'
+    df_print: kable
+    toc: false
+    toc_depth: 2
+  papaja::apa6_word: default
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+library(here)
+library(summarytools)
+library(knitr)
+library(raster)
+library(gstat)
+library(sp)
+library(sf)
+library(stars)
+library(mapview)
+library(viridis)
+# library(rgeos)
+# library(rgdal)
+library(DescTools)
+library(RColorBrewer)
+library(ggrepel)
+library(MOTE)
+library(papaja)
+library(kableExtra)
+library(rio)
+library(patchwork)
+library(janitor)
+# library(conflicted)
+library(tidymodels)
+library(tidyverse)
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  fig.path = "figures/",
+  fig.retina = 3,
+  fig.width = 6,
+  fig.asp = 0.618,
+  fig.align = "center",
+  out.width = "90%"
+)
+
+theme_set(theme_bw(base_size = 10))
+# conflict_prefer('select','dplyr')
+# conflict_prefer('filter','dplyr')
+
+x_var = 'Distancia [m]'
+y_var = 'Semivarianza'
+x_map = 'X [m]'
+y_map = 'Y [m]'
+x_vmap = "Distancia E-W [m]"
+y_vmap = "Distancia N-S [m]"
+```
+
+# Introducción
+
+Este material extra muestra todo el código en **R** que se usó en la sección Análisis geoestadístico del artículo principal, incluyendo no solo la parte geoestadística sino la creación de gráficos y tablas. Se limita únicamente a la explicación básica de cuál código se usó para qué, y de cómo se usa. Para la base teórica, interpretación y análisis se remite al lector al artículo principal.
+
+# Análisis geoestadístico {#geostats-analisis}
+
+Se va a hacer uso del paquete **gstat** [@R-gstat] para la parte geoestadística, y para la manipulación de los datos se usan **dplyr** [@R-dplyr], **tidyr** [@R-tidyr] y **broom** [@R-broom], para los gráficos se usa **ggplot2** [@R-ggplot2; @ggplot22016], para las tablas se usa **kableExtra** [@R-kableExtra], y para la creación y manipulación de objetos espaciales se usan **sf** [@R-sf], **sp** [@R-sp], y **stars** [@R-stars].
+
+## Análisis Exploratorio de Datos
+
+Para importar los datos en el objeto denominado `datos` se usa `import` del paquete **rio** [@R-rio]. La tabla contiene 3 columnas: "x", "y", "z", donde las dos primeras corresponden con las coordenadas y la tercera corresponde con la variable de interés. Para mayor facilidad se define la variable en un objeto `myvar`, que podrá ser reutilizado.
+
+Se puede obtener un resumen estadístico de la variable por medio de la función `descr` del paquete **summarytools** [@R-summarytools], el cual es trabajado para mostrar solo lo necesario. La Tabla \@ref(tab:AED) se genera con la función `kable`, donde se pueden modificar aspectos como los nombres de las columnas, la cantidad de dígitos a usar, el alineado, y el encabezado. Adicionalmente se guarda la varianza de la variable en el objeto `S`.
+
+```{r AED, fig.cap='Histograma de la variable. La línea roja corresponde con la media, y la curva azul con la curva de densidad empírica.'}
+datos = import(here('data','datos.csv'),setclass = 'tbl')
+
+myvar = 'z' # variable a modelar
+
+descr(datos[myvar],style = 'rmarkdown',transpose = T) %>% 
+  select(-c(12,13,15)) %>% 
+  relocate(N.Valid) %>% 
+  kable(col.names = c('N','Media','Desv. Est.','Min','Q1','Mediana',
+                      'Q3','Max','MAD','IQR','CV','Asimetría'),
+        digits = 2,
+        format = 'simple',
+        align = 'c',
+        caption = 'Resumen estadístico de la variable "z".')
+
+S = var(datos[[myvar]]) # varianza de la variable
+S
+
+gg.hist = ggplot(datos, aes_string(myvar)) + 
+  geom_histogram(aes(y = stat(density)), bins = 10, 
+                 col = 'black', fill = 'orange') + 
+  geom_vline(xintercept = mean(datos[[myvar]]), col = 'red', size=1.25) +
+  geom_density(col = 'blue', size=1.25) +
+  labs(y = 'Densidad')
+gg.hist
+```
+
+El histograma (Figura \@ref(fig:AED)) se construye con **ggplot2**, donde se remite al lector a consultar @garnier-villarreal2020 (Capítulo 4) para una guía de como usar este paquete de una forma más amplia. De manera general, hace uso de data frames (tablas) y sus variables de una forma directa, donde dependiendo de lo que se quiere graficar se emplean diferentes geomestrías (`geom_*`), y tiene otra serie de funciones para personalizar el gráfico.
+
+Para pasar los datos a formato espacial se usa la función `st_as_sf` del paquete **sf**, donde se definen las columnas donde se ubican las coordenadas (x=1,y=2), y el sistema de referencia (crs), donde en este caso no corresponde a ninguno entonces se usa `NA`, pero sino se usaria el código *epsg* respectivo. El resto de acciones son para pasos posteriores y no es necesario modificarlas.
+
+```{r datos-sf}
+datos_sf = st_as_sf(datos, coords = 1:2, crs = NA) %>% 
+  mutate(X = st_coordinates(.)[,1], Y = st_coordinates(.)[,2]) %>% 
+  relocate(X, Y)
+datos_sp = as(datos_sf, 'Spatial')
+coordnames(datos_sp) = c('X','Y')
+```
+
+Las distancias se determinan una vez se tiene el objeto espacial, usando `st_distance` de **sf**. El resto del código es simple manipulación para obtener un vector con las distancias mínima, media, y máxima.
+
+```{r distancias}
+dists = st_distance(datos_sf) %>% .[lower.tri(.)] %>% unclass()
+distancias = signif(c(min(dists), mean(dists), max(dists)),6) # rango de distancias
+names(distancias) = c('min', 'media', 'max') 
+distancias
+```
+
+Una forma de mostrar el área de influencia de los resultados es tener un polígono que encierra a los datos, ya que sería esta el área donde los resultados son realmente válidos. El siguiente código realiza el cálculo de dicho polígono.
+
+```{r outline}
+outline = st_convex_hull(st_union(datos_sf))
+```
+
+La grilla a interpolar se crea con el siguiente código, generando objetos `stars` que son similares a objetos `raster` [@R-raster] pero más versátiles ya que permiten tener arreglos espaciales más complejos y diversos. Primeramente se genera una grilla regular `datosint` y a partir del polígono que encierra los datos (obtenido arriba) se recorta esta grilla en una grilla irregular (`datosint2`).
+
+```{r grilla-interp}
+bb = st_bbox(datos_sf)
+dint = max(c(bb[3]-bb[1],bb[4]-bb[2])/nrow(datos_sf))
+dx = seq(bb[1],bb[3],dint) # coordenadas x
+dy = seq(bb[4],bb[2],-dint) # coordenadas y
+st_as_stars(matrix(0, length(dx), length(dy))) %>%
+  st_set_dimensions(1, dx) %>%
+  st_set_dimensions(2, dy) %>%
+  st_set_dimensions(names = c("X", "Y")) %>% 
+  st_set_crs(st_crs(datos_sf)) -> datosint
+
+datosint2 = st_crop(datosint, outline)
+```
+
+La distribución en el espacio de los datos se muestra en la Figura \@ref(fig:dist-espacial), donde los puntos se encuentran rellenados de acuerdo al valor de la variable (`aes_string(col = myvar)`), de nuevo haciendo uso de **ggplot2**.
+
+```{r dist-espacial, fig.cap='Mapa de puntos mostrando la distribución espacial de la variable.'}
+gg.map.pts = ggplot() + 
+  geom_sf(data = outline, col = 'cyan', alpha = .1, size = .75) + 
+  geom_sf(data = datos_sf, aes_string(col = myvar), size = 3, alpha = 0.6) + 
+  scale_color_viridis_c() + 
+  labs(x = x_map, y = y_map) +
+  if (!is.na(st_crs(datos_sf))) {
+    coord_sf(datum = st_crs(datos_sf))
+  }
+gg.map.pts
+```
+
+El siguiente código no se ejecuta, ya que genera un mapa interactivo que no se puede desplegar aquí, pero se incluye para referencia y en caso de que se quiera utilizar. Para este mapa se usa el paquete **mapview** [@R-mapview] y para los colores se usa el paquete **RColorBrewer** [@R-RColorBrewer]. Consultar @garnier-villarreal2020 (Capítulo 6) para más información sobre el uso de **R** para datos espaciales.
+
+```{r eval=F}
+mapview(outline, alpha.regions = 0, layer.name='Borde', 
+        homebutton = F, legend = F, native.crs = F) + 
+  mapview(datos_sf, zcol = myvar, alpha=0.1, 
+          layer.name = myvar, native.crs = F, 
+          col.regions = brewer.pal(9,'YlOrRd'))
+```
+
+## Modelado geoestadístico 
+
+Se va a usar el Kriging Ordinario ya que no se necesitó transformar los datos.
+
+### Variograma experimental
+
+A partir de aquí se va a usar **gstat**, donde lo primero es crear un objeto `gstat` donde se definen los datos (en formato espacial) a usar y la variable de interés. Para definir la variable de interés se usa la sintaxis de fórmula de la siguiente forma: `variable ~ 1`, donde se define la misma con respecto al objeto `myvar`, donde se guardó el nombre de la variable ('z') a estudiar.
+
+Con el objeto `gstat` se construye el variograma experimental usando la función `variogram`. Esta función tiene como argumentos el objeto `gstat`, el intervalo de distancia deseado (`width`) y la distancia máxima a la cual calcular la semivarianza (`cutoff`). La distancia máxima era `r apa(max(distancias),2)`, de ahí que se escoge un valor ligeramente inferior a la mitad. El resultado de `variogram` es un data frame por lo que se puede usar **ggplot2** para crear la Figura \@ref(fig:variog-omni).
+
+```{r eval=TRUE}
+myformula = as.formula(paste(myvar,'~1'))
+g = gstat(formula = myformula, 
+          data = datos_sf) # objeto gstat para hacer geoestadistica
+
+# variograma experimental cada cierta distancia (width), y hasta cierta distancia (cutoff)
+dat.vgm = variogram(g, 
+                    width = 5,
+                    cutoff = 60) 
+```
+
+```{r variog-omni, fig.cap='Variograma experimental omnidireccional. Las etiquetas de los puntos muestran con el número de pares de puntos usados para el cálculo de la semivarianza. La línea roja punteada corresponde con la varianza de la variable, que es una aproximación a la meseta total.', out.width='90%'}
+gg.omni.exp = ggplot(dat.vgm,aes(x = dist, y = gamma)) + 
+  geom_point(size = 2) + 
+  labs(x = x_var, y = y_var) +
+  geom_hline(yintercept = S, col = 'red', linetype = 2) +
+  ylim(0, max(dat.vgm$gamma)) +
+  xlim(0, max(dat.vgm$dist)) + 
+  geom_text_repel(aes(label = np), size = 3)
+gg.omni.exp
+```
+
+Para el mapa de la superficie de variograma de nuevo se usa la función `variogram`, con los argumentos de la extensión (`cutoff`, misma que el variograma experimental), el ancho del pixel (`width`, no es el mismo que para el variograma, por lo general mayor), y definir que se quiere un mapa (`map=TRUE`). De nuevo, como el resultado es un data frame se usa **ggplot2** para visualizar el mapa (Figura \@ref(fig:variog-map)).
+
+```{r eval=TRUE}
+map.vgm <- variogram(g, 
+                     width = 10, 
+                     cutoff = 60, 
+                     map = TRUE)
+```
+
+```{r variog-map, fig.cap='Mapa de la superficie de variograma. No se observa un patrón o tendencia o dirección preferncial.', out.width='90%'}
+gg.map.exp = ggplot(data.frame(map.vgm), aes(x = map.dx, y = map.dy, fill = map.var1)) +
+  geom_raster() + 
+  scale_fill_gradientn(colours = plasma(20)) +
+  labs(x = x_vmap, y = y_vmap, fill = "Semivarianza") +
+  coord_equal()
+gg.map.exp
+```
+
+Para los variogramas direccionales, de nuevo con la función `variogram`, hay que definir adicionalmente las direcciones (`alpha`) y la tolerancia angular (`tol.hor`), donde se definen las direcciones en un vector `d`.
+
+```{r eval=TRUE}
+# con direcciones y tolerancia angular
+d = c(0,45,90,135) # direcciones
+dat.vgm2 = variogram(g, 
+                     alpha = d,
+                     tol.hor = 22.5, 
+                     cutoff = 60) 
+```
+
+Para visualizar de manera apropiada los variogramas direccionales con **ggplot2** (Figura \@ref(fig:variog-dir)) es necesaria una pequeña modificación de los datos, pasando las direcciones (`dir.hor`) de una variable numérica a una categórica por medio de la función `factor`.
+
+```{r}
+dat.vgm2.gg = dat.vgm2 %>% 
+  mutate(dir.hor = factor(dir.hor, labels = as.character(d)))
+```
+
+```{r variog-dir, fig.cap='Variogramas experimentales direccionales cada 45°. La línea roja punteada representa la varianza de la variable, lo que se aproxima a la meseta total.', out.width='90%'}
+gg.dir.exp = ggplot(dat.vgm2.gg,aes(x = dist, y = gamma,
+                       col = dir.hor, shape = dir.hor)) + 
+  geom_point(size = 2) + 
+  labs(x = x_var, y = y_var, col = "Dirección", shape = 'Dirección') +
+  geom_hline(yintercept = S, col = 'red', linetype = 2) +
+  ylim(0, max(dat.vgm2$gamma)) +
+  xlim(0, max(dat.vgm2$dist)) + 
+  scale_color_brewer(palette = 'Dark2') +
+  facet_wrap(~dir.hor) + 
+  geom_text_repel(aes(label = np), size = 3, show.legend = F) +
+  theme(legend.position = 'top')
+gg.dir.exp
+```
+
+### Ajuste de modelo de variograma
+
+Para modelar un modelo de variograma hay que definir valores iniciales de las partes, que se obtienen a partir de un análisis rápido del variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)), y se definen en objetos como se muestra a continuación:
+
+```{r params}
+pep = .25 # pepita
+meseta = .5 # meseta parcial
+mod = "Sph" # modelo a ajustar (esférico)
+rango = 30 # rango
+```
+
+Se usa la función `fit.variogram`, que realiza un ajuste automático, con los argumentos del variograma experimental y el modelo que se define por medio de la función `vgm`, usando los valores iniciales definidos arriba.
+
+```{r ajuste, eval=TRUE}
+dat.fit = fit.variogram(dat.vgm, 
+                        model = vgm(psill = meseta, 
+                                    model = mod, 
+                                    range = rango, 
+                                    nugget = pep))
+
+fit.rmse = sqrt(attributes(dat.fit)$SSErr/(nrow(datos))) # error del ajuste
+fit.rmse
+```
+
+Un error de ajuste inicial y optimista se obtiene calculando "manualmente" el $RMSE$, a como se muestra arriba (`fit.rmse`).
+
+El resultado del ajuste es un data frame:
+
+```{r eval=TRUE}
+varmod = dat.fit # modelo ajustado
+varmod
+```
+
+Para crear la Tabla \@ref(tab:ajuste-tab) de nuevo se hace uso de la función `kable` con sus respectivos argumentos.
+
+```{r ajuste-tab}
+varmod %>% 
+  select(1:3) %>% 
+  kable(col.names = c('Modelo','Meseta','Rango'),
+        format = 'simple',
+        align = 'c',
+        digits = 3,
+        caption = 'Modelo ajustado al variograma experimental') %>% 
+  kable_styling(full_width = F)
+```
+
+Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)), de nuevo usando **ggplot2**. Para poder graficar el modelo ajustado es necesario definir la dirección a la cual se quiere estimar y para esto hay que definirlo en un vector unitario. Para simplificar este paso se creó la función `unit_vector`, que posteriormente se usa para crear un objeto (`variog.dir`) que va a contener la semivarianza ajustada para las direcciones definidas (en este caso el vector `d`, definido anteriormente).
+
+```{r}
+unit_vector = function(th) {
+  if (th == 0) {
+    uv = c(0,1,0)
+  } else if (th == 90) {
+    uv = c(1,0,0)
+  } else if (th == 180) {
+    uv = c(0,-1,0)
+  } else if (between(th,0,90)) {
+    uv = c(sin(th*pi/180),cos(th*pi/180),0)
+  } else if (between(th,90,180)) {
+    uv = c(cos((th-90)*pi/180),-1*sin((th-90)*pi/180),0)
+  }
+  return(uv)
+}
+
+variog.dir = map_dfr(d, ~variogramLine(object = varmod, 
+                                       maxdist = max(dat.vgm$dist),
+                                       min = 0.001, n = 100, 
+                                       dir = unit_vector(.x)), 
+                     .id = 'dir.hor') %>% 
+  as_tibble() %>% 
+  mutate(dir.hor = factor(dir.hor, labels = as.character(d)))
+```
+
+```{r ajuste-1, fig.cap='Variograma experimental omnidireccional con el modelo esférico ajustado sobrepuesto.', out.width='90%'}
+# plot(dat.vgm, dat.fit, xlab = x_var, ylab = y_var) 
+
+# omnidireccional
+
+gg.omni.fit = variog.dir %>% 
+  ggplot(aes(dist,gamma)) + 
+  geom_point(data = dat.vgm,shape=1,size=2) +
+  geom_line(size=1)  +
+  labs(x = x_var, y = y_var) +
+  coord_cartesian(ylim = c(0,max(dat.vgm$gamma)))
+gg.omni.fit
+```
+
+```{r ajuste-2, fig.cap='Variogramas experimentales direccionales con el modelo esférico ajustado sobrepuesto, mostrando que el modelo es válido para todas las direcciones.', out.width='90%'}
+# plot(dat.vgm2, dat.fit, as.table = T, xlab = x_var, ylab = y_var) 
+
+# direccionales
+
+gg.dir.fit = variog.dir %>% 
+  ggplot(aes(dist,gamma,col=dir.hor)) + 
+  geom_point(data = dat.vgm2.gg,shape=1,size=1.5) +
+  geom_line(size=1) + 
+  scale_color_brewer(palette = 'Dark2') +
+  labs(x = x_var, y = y_var, col = 'Dirección') +
+  facet_wrap(~dir.hor) +
+  theme(legend.position = 'top')
+gg.dir.fit
+```
+
+### Validación cruzada
+
+La validación cruzada se realiza por medio de la función `krige.cv`, con los argumentos siendo la fórmula, los datos espaciales, y el modelo ajustado, y por defecto usa el método *LOO*. Si se quisiera usar *K-fold* se puede definir el argumento `nfold = K`, donde `K` es el número de grupos a crear. El objeto resultante (`kcv.ok`) va a contener los valores predecidos (`var1.pred`), la varianza de las predicciones (`var1.var`), los valores observados (`observed`), y los residuales (`residual`).
+
+```{r xval, eval=TRUE, message=FALSE}
+kcv.ok = krige.cv(myformula, 
+                  locations = datos_sf, 
+                  model = varmod)
+```
+
+El siguiente bloque de código muestra cómo se calculan las diferentes métricas, ya sea usando funciones ya disponibles (`xval.mape`,`correl`) o escribiendo la fórmula necesaria (`xval.rmse`, `xval.msdr`, `xval.g`). Para el coeficiente de determinación (`xval.r2`) se ajusta un modelo lineal entre los valores predecidos y observados, y se extrae del objeto resultante.
+
+```{r xval-metrics, include=TRUE}
+cl = .95 # nivel de confianza
+decimales = 3 # decimales a usar
+
+xval.rmse = sqrt(mean(kcv.ok$residual^2)) # RMSE - menor es mejor
+
+xval.msdr = mean(kcv.ok$residual^2/kcv.ok$var1.var) # MSDR - ~1 es mejor
+
+xval.mod = lm(observed ~ var1.pred, as.data.frame(kcv.ok))
+
+xval.r2 = xval.mod %>% 
+  broom::glance() %>% 
+  pull(r.squared) # r2 - mayor es mejor
+
+xval.g = 1 - (sum((kcv.ok$var1.pred-kcv.ok$observed)^2)/sum((kcv.ok$observed-mean(kcv.ok$observed))^2)) # G - mayor y positivo es mejor
+
+xval.mape = MAPE(xval.mod) # MAPE - menor es mejor
+
+correl = signif(CorCI(cor(kcv.ok$observed, 
+                          kcv.ok$var1.pred), 
+                      nrow(kcv.ok)),
+                decimales) # r
+
+metricas = tibble(metric = c('$RMSE$','$MSDR$','$r$','$R^2$','$MAPE$','$G$'), 
+                  estimate = c(apa(xval.rmse,decimales),
+                               apa(xval.msdr,decimales),
+                               apa(correl[1],decimales,F),
+                               apa(xval.r2,decimales,F),
+                               apa(xval.mape,decimales,F),
+                               apa(xval.g,decimales,F)))
+```
+
+Para dar el formato apropiado a los resultados, según los estándares de APA -@americanpsychologicalassociation2010, se usa la función `apa` del paquete **MOTE** [@R-MOTE], donde se define el valor a formatear, el número de decimales, y si se incluye el '0' al inicio. Datos que no pueden ser superiores a 1 o inferiores a -1 se reportan sin el '0' al inicio, de ahí que $r$, $R^2$, $MAPE$, y $G$ se reportan de esta forma.
+
+Para crear la Tabla \@ref(tab:xval-metrics-tab) de nuevo se hace uso de la función `kable` con sus respectivos argumentos.
+
+```{r xval-metrics-tab}
+metricas %>% 
+  kable(col.names = c('Métrica','Valor'),
+        format = 'simple',
+        align = 'c',
+        # digits = 3,
+        caption = 'Métricas de ajuste para la validación cruzada') %>% 
+  kable_styling(full_width = F)
+```
+
+Los resultados de la validación cruzada (Figura \@ref(fig:xval-plots)) se pueden visualizar con **ggplot2**, transformando el resultado en un data frame `as.data.frame(kcv.ok)`. En este caso se generan los dos gráficos (**A** y **B**) por aparte y se ponen en uno solo usando el paquete **patchwork** [@R-patchwork].
+
+```{r xval-plots1, fig.cap='Relación entre los valores observados y predecidos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos.', out.width='80%'}
+gg.xval1 = ggplot(as.data.frame(kcv.ok), aes(var1.pred, observed)) + 
+  geom_point(col = "blue", shape = 1, size = 1.25) + 
+  coord_fixed() + 
+  geom_abline(slope = 1, col = "red", size = 1.25) + 
+  geom_smooth(se = F, method = 'lm', col = 'green', size = 1.25) +
+  labs(x = "Predecidos", y = "Observados")
+```
+
+```{r xval-plots2, fig.cap='Histograma de los residuales de la validación cruzada. La linea roja es la media de los residuales y la curva azul la curva de densidad.', out.width='80%'}
+gg.xval2 = ggplot(as.data.frame(kcv.ok), aes(residual)) + 
+  geom_histogram(aes(y=stat(density)), bins = 8, 
+                 col = 'black', fill = "orange") + 
+  geom_density(col = 'blue', size=1.25) + 
+  labs(x = "Residuales", y = "Densidad") + 
+  geom_vline(xintercept = mean(kcv.ok$residual), col = 'red', size=1.25)
+```
+
+```{r xval-plots, fig.cap='Análisis de los resultados de validación cruzada. **A** Relación entre los valores observados y predecidos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos. **B** Histograma de los residuales de la validación cruzada. La linea roja es la media de los residuales y la curva azul la curva de densidad.', out.width='80%'}
+gg.xval = gg.xval1 + gg.xval2 + plot_annotation(tag_levels = 'A')
+gg.xval
+```
+
+## Interpolación (Kriging)
+
+La interpolación por Kriging se realiza con la función `krige`, cuyos argumentos son la fórmula, los datos, la grilla a interpolar, y el modelo ajustado seleccionado.
+
+```{r kriging, eval=TRUE}
+ok = krige(myformula, 
+           locations = datos_sp,
+           newdata = datosint2, 
+           model = varmod)
+```
+
+El resultado, objeto `stars`, va a contener dos columnas: los valores predecidos (estimados) en `var1.pred` y la varianza (error) de la predicción (estimación) en `var1.var`. El argumento más importante para la visualización de los resultados (usando **ggplot2**) es el `aes(fill)` donde se define la columna (resultado) a visualizar (predicción o varianza). De manera similar a la validación cruzada, se genera cada mapa por separado y se ponen juntos usando **patchwork**.
+
+```{r mapa-pred, warning=FALSE, fig.cap='Mapa de predicción de la variable de interés.', out.width='90%'}
+gg.pred = ggplot() + 
+  geom_stars(data = ok, aes(fill = var1.pred, x = x, y = y)) + 
+  scale_fill_gradientn(colours = viridis(10), na.value = NA) + 
+  coord_sf() + 
+  labs(x = x_map, y = y_map, 
+       # title = 'Predicción', 
+       fill = myvar)
+```
+
+```{r mapa-var, warning=FALSE, fig.cap='Mapa de varianza (error) de la variable de interés.', out.width='90%'}
+gg.var = ggplot() + 
+  geom_stars(data = ok, aes(fill = var1.var, x = x, y = y)) + 
+  scale_fill_gradientn(colours = brewer.pal(9,'RdPu'), na.value = NA) + 
+  coord_sf() + 
+  labs(x = x_map, y = y_map, 
+       # title = 'Varianza',
+       fill = myvar)
+```
+
+```{r mapas-kriging, warning=FALSE, fig.cap='Mapas de predicción (**A**) y de la varianza/error (**B**) de la variable de interés.', out.width='100%'}
+gg.kriging = gg.pred + gg.var + plot_annotation(tag_levels = 'A')
+gg.kriging
+```
+
+# Referencias
+
+```{r write-packages, include = FALSE}
+if (!file.exists("bib/packages.bib")) file.create("bib/packages.bib")
+if (!file.exists("bib/knit.bib")) file.create("bib/knit.bib")
+suppressWarnings(
+  knitr::write_bib(c("rmarkdown", "bookdown"), "bib/knit.bib")
+)
+suppressWarnings(
+  knitr::write_bib(c(.packages()), "bib/packages.bib")
+)
+```
+
+```{r write-bib, eval=TRUE, include=FALSE}
+allref = c(readLines('bib/geostats.bib'),
+           '\n',
+           readLines('bib/knit.bib'),
+           '\n',
+           readLines('bib/packages.bib'))
+writeLines(allref,'bib/all.bib')
+```
