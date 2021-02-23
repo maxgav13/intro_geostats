@@ -17,12 +17,12 @@ F13 - gg.hist - 14 x 8.4
 F14 - gg.map.pts - 14 x 8.4
 
 ```{r eval=FALSE, include=FALSE}
-ggsave(filename = "F14.tiff", 
-       plot = gg.map.pts, 
+ggsave(filename = "nuget.tiff", 
+       plot = gg.nug, 
        path = here('figures'),
        dpi = 300,
-       width = 14, 
-       height = 8, 
+       width = 10, 
+       height = 7.31, 
        units = "cm",
        # compression = "lzw",
        type = 'quartz'

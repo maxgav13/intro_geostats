@@ -1,12 +1,4 @@
-.rmdnote {
-  padding: 1em 1em 1em 4em;
-  margin-bottom: 10px;
-  background: #f5f5f5 5px center/3em no-repeat;
-}
-.rmdnote {
-  background-image: url("../images/note.png");
-}
-p.caption {
+.caption {
   color: #777;
   margin-top: 10px;
 }
@@ -20,3 +12,38 @@ pre {
 pre code {
   white-space: inherit;
 }
+
+.tittle { 
+  color: #F01843;
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18pt;
+}
+
+.level1 h1 {
+  border-bottom: 1px solid;
+}
+
+h1 { 
+  color: black;
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16pt;
+  font-style: italic;
+}
+
+h2 { 
+  color: black;
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14pt;
+  text-decoration: underline;
+}
+
+h3 { 
+  color: black;
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12pt;
+  text-decoration: underline;
+  }
