@@ -20,6 +20,11 @@ link-citations: true
 # documentclass: "apa6"
 # classoption: "man"
 output:
+  bookdown::word_document2:
+    reference_docx: 'template.docx'
+    df_print: kable
+    toc: false
+    toc_depth: 2
   bookdown::html_document2:
     toc: true
     toc_depth: 3
@@ -27,11 +32,6 @@ output:
     theme: cosmo
     number_sections: true
     # dev: "tiff"
-  bookdown::word_document2:
-    reference_docx: 'template.docx'
-    df_print: kable
-    toc: false
-    toc_depth: 2
   bookdown::pdf_document2:
     df_print: kable
     number_sections: false
