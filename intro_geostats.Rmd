@@ -20,11 +20,6 @@ link-citations: true
 # documentclass: "apa6"
 # classoption: "man"
 output:
-  bookdown::word_document2:
-    reference_docx: 'template.docx'
-    df_print: kable
-    toc: false
-    toc_depth: 2
   bookdown::html_document2:
     toc: true
     toc_depth: 3
@@ -32,6 +27,11 @@ output:
     theme: cosmo
     number_sections: true
     # dev: "tiff"
+  bookdown::word_document2:
+    reference_docx: 'template.docx'
+    df_print: kable
+    toc: false
+    toc_depth: 2
   bookdown::pdf_document2:
     df_print: kable
     number_sections: false
@@ -275,7 +275,7 @@ knitr::include_graphics(here('images','variog-comparacion.png'))
 
 ## Anisotropía
 
-La variable y su relación en el espacio puede no solo depender de la distancia sino también de la dirección en que se estima. Si hay una dependencia (comportamiento diferenciado) de la dirección se dice que existe una anisotropía y sino el comportamiento es isotrópico u omnidireccional [@chiles1999; @goovaerts1997; @isaaks1989; @oliver2014c; @webster2007].
+La variable y su relación en el espacio puede no solo depender de la distancia sino también de la dirección en que se estima. Si hay una dependencia (comportamiento diferenciado) de la dirección se dice que existe una anisotropía y sino el comportamiento es isotrópico u omnidireccional. La anisotropía se representa como una elipse, donde el eje mayor va a alinearse con la dirección de mayor continuidad espacial y el eje menor con la dirección de menor continuidad espacial (perpendicular al eje mayor) [@chiles1999; @goovaerts1997; @isaaks1989; @oliver2014c; @webster2007]. Lo acostumbrado es escoger direcciones en el rango de 0 a 180, ya que al tratarse de un elipse las direcciones mayores a 180 son simplemente el opuesto de direcciones menores a 180 (ejemplo: 220 es el opuesto de 40).
 
 La anisotropía puede ser de dos tipos: *geométrica* o *zonal.* La geométrica es la más común y la más fácil de modelar. En la anisotropía geométrica se tiene, para las diferentes direcciones, la misma meseta pero diferente rango. En la anisotropía zonal se tiene el mismo rango pero mesetas diferentes [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007].
 
@@ -555,7 +555,7 @@ gg.map.exp = ggplot(data.frame(map.vgm), aes(x = map.dx, y = map.dy, fill = map.
 gg.map.exp
 ```
 
-Para los variogramas direccionales hay que definir, adicionalmente, los argumentos de las direcciones (`alpha`) y la tolerancia angular (`tol.hor`), donde lo más usado son direcciones cada 45° y la tolerancia angular es la mitad del intervalo entre direcciones (22.5°).
+Para los variogramas direccionales hay que definir, adicionalmente, los argumentos de las direcciones (`alpha`) y la tolerancia angular (`tol.hor`), donde lo más usado son direcciones cada 45° y la tolerancia angular es la mitad del intervalo entre direcciones (22.5°). De nuevo, solo es necesario definir direcciones entre 0 y 180, y 180 se excluye por ser el opuesto de 0.
 
 ```{r eval=TRUE, echo=TRUE}
 # con direcciones y tolerancia angular
@@ -650,6 +650,7 @@ Con el modelo ajustado se puede visualizar éste sobre el variograma omnidirecci
 
 ```{r}
 unit_vector = function(th) {
+  th = if_else(th>=180, th-180, th)
   if (th == 0) {
     uv = c(0,1,0)
   } else if (th == 90) {

@@ -22,11 +22,6 @@ output:
     number_sections: true
     code_download: true
     # dev: "tiff"
-  distill::distill_article:
-    toc: true
-    toc_depth: 3
-    toc_float: true
-    df_print: kable
   bookdown::pdf_document2:
     df_print: kable
     number_sections: false
@@ -38,7 +33,6 @@ output:
     df_print: kable
     toc: false
     toc_depth: 2
-  papaja::apa6_word: default
 always_allow_html: true
 ---
 
@@ -121,9 +115,10 @@ descr(datos[myvar],style = 'rmarkdown',transpose = T) %>%
   kable(col.names = c('N','Media','Desv. Est.','Min','Q1','Mediana',
                       'Q3','Max','MAD','IQR','CV','Asimetría'),
         digits = 2,
-        format = 'simple',
+        # format = 'simple',
         align = 'c',
-        caption = 'Resumen estadístico de la variable "z".')
+        caption = 'Resumen estadístico de la variable "z".') %>% 
+  kable_styling(full_width = F)
 
 S = var(datos[[myvar]]) # varianza de la variable
 S
@@ -254,7 +249,7 @@ gg.map.exp = ggplot(data.frame(map.vgm), aes(x = map.dx, y = map.dy, fill = map.
 gg.map.exp
 ```
 
-Para los variogramas direccionales, de nuevo con la función `variogram`, hay que definir adicionalmente las direcciones (`alpha`) y la tolerancia angular (`tol.hor`), donde se definen las direcciones en un vector `d`.
+Para los variogramas direccionales, de nuevo con la función `variogram`, hay que definir adicionalmente las direcciones (`alpha`) y la tolerancia angular (`tol.hor`), donde se definen las direcciones en un vector `d`. Lo típico es definir las direcciones en el rango de 0 a 180, ya que para efectos prácticos direcciones mayores a 180 son simplemente el opuesto de direcciones menores a 180 (ejemplo: 210 es el opuesto de 30), por tratarse de un elipse donde lo que interesa es la tendencia general de los ejes mayor y menor. Por lo anterior es que 180 se excluye, ya que es el opuesto de 0.
 
 ```{r eval=TRUE}
 # con direcciones y tolerancia angular
@@ -326,30 +321,27 @@ Para crear la Tabla \@ref(tab:ajuste-tab) de nuevo se hace uso de la función `k
 varmod %>% 
   select(1:3) %>% 
   kable(col.names = c('Modelo','Meseta','Rango'),
-        format = 'simple',
+        # format = 'simple',
         align = 'c',
         digits = 3,
         caption = 'Modelo ajustado al variograma experimental') %>% 
   kable_styling(full_width = F)
 ```
 
-Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)), de nuevo usando **ggplot2**. Para estimar la semivarianza en una dirección específica se usa la función `variogramLine`, donde se define el modelo, la distancia máxima hasta la cual calcular la semivarianza (`maxdist`), la distancia mínima (`min`), el número de puntos a calcular (`n`), y la dirección como vector unitario (`dir`). Para simplificar la conversión de la dirección en grados a vector unitario, se creó la función `unit_vector`.
+Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)), de nuevo usando **ggplot2**. Para estimar la semivarianza en una dirección específica se usa la función `variogramLine`, donde se define el modelo, la distancia máxima hasta la cual calcular la semivarianza (`maxdist`), la distancia mínima (`min`), el número de puntos a calcular (`n`), y la dirección como vector unitario (`dir`). Para simplificar la conversión de la dirección de grados a vector unitario, se creó la función `unit_vector`, que es simplemente una serie de declaraciones condicionales.
 
 El objeto `variog.dir` va a contener la semivarianza ajustada para las direcciones definidas. Este objeto se crea de manera iterativa para cada una de las distancias del vector `d`, haciendo uso de la función `map_dfr` del paquete **purrr**, la cual crea un data frame.
 
 ```{r}
 unit_vector = function(th) {
-  if (th == 0) {
-    uv = c(0,1,0)
-  } else if (th == 90) {
-    uv = c(1,0,0)
-  } else if (th == 180) {
-    uv = c(0,-1,0)
-  } else if (between(th,0,90)) {
-    uv = c(sin(th*pi/180),cos(th*pi/180),0)
-  } else if (between(th,90,180)) {
-    uv = c(cos((th-90)*pi/180),-1*sin((th-90)*pi/180),0)
-  }
+  th = if_else(th>=180, th-180, th)
+  uv = case_when(
+    th == 0 ~ c(0,1,0),
+    th == 90 ~ c(1,0,0),
+    th == 180 ~ c(0,-1,0),
+    between(th,0,90) ~ c(sin(th*pi/180),cos(th*pi/180),0),
+    between(th,90,180) ~ c(cos((th-90)*pi/180),-1*sin((th-90)*pi/180),0)
+  )
   return(uv)
 }
 
@@ -443,7 +435,7 @@ Para crear la Tabla \@ref(tab:xval-metrics-tab) de nuevo se hace uso de la funci
 ```{r xval-metrics-tab}
 metricas %>% 
   kable(col.names = c('Métrica','Valor'),
-        format = 'simple',
+        # format = 'simple',
         align = 'c',
         # digits = 3,
         caption = 'Métricas de ajuste para la validación cruzada') %>% 

@@ -20,16 +20,16 @@ pre code {
   font-size: 18pt;
 }
 
-.level1 h1 {
-  border-bottom: 1px solid;
-}
-
 h1 { 
   color: black;
   font-weight: bold;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 16pt;
   font-style: italic;
+}
+
+.level1 h1 {
+  border-bottom: 1px solid;
 }
 
 h2 { 
