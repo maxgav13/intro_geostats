@@ -1,5 +1,5 @@
 ---
-title: "Material extra: Análisis geoestadístico resumido mostrando todo el código empleado"
+title: "Material extra: Análisis geoestadístico resumido mostrando todo el código empleado en R"
 author: 
   - name: "Maximiliano Garnier-Villarreal"
     affiliation: 'Escuela Centroamericana de Geología, Universidad de Costa Rica'
@@ -8,7 +8,7 @@ author:
 lang: es
 bibliography: ["bib/all.bib"]
 # biblio-style: apalike2
-csl: csl/apa.csl
+csl: csl/apa6.csl
 css: css/style.css
 # documentclass: "apa6"
 # classoption: "man"
@@ -21,6 +21,7 @@ output:
     theme: cosmo
     number_sections: true
     code_download: true
+    keep_md: true
     # dev: "tiff"
   bookdown::pdf_document2:
     df_print: kable
@@ -28,11 +29,6 @@ output:
     toc: false
     includes:
       in_header: header.tex
-  bookdown::word_document2:
-    reference_docx: 'template.docx'
-    df_print: kable
-    toc: false
-    toc_depth: 2
 always_allow_html: true
 ---
 
@@ -67,7 +63,7 @@ knitr::opts_chunk$set(
   message = FALSE,
   warning = FALSE,
   error = FALSE,
-  fig.path = "figures/",
+  fig.path = "figures/extra/",
   fig.retina = 3,
   fig.width = 5,
   fig.asp = 0.618,
@@ -90,7 +86,7 @@ y_vmap = "Distancia N-S [m]"
 
 # Introducción
 
-Este material extra muestra todo el código en **R** que se usó en la sección Análisis geoestadístico del artículo principal, incluyendo no solo la parte geoestadística sino la creación de gráficos y tablas. Se limita únicamente a la explicación básica de cuál código se usó para qué, y de cómo se usa. Para la base teórica, interpretación y análisis se remite al lector al artículo principal.
+Este material extra muestra todo el código en **R** que se usó en la sección Análisis geoestadístico del artículo principal. Se limita únicamente a la explicación básica de cuál código se usó para qué, y de cómo se usa. Para la base teórica, interpretación y análisis se remite al lector al artículo principal.
 
 # Análisis geoestadístico {#geostats-analisis}
 
@@ -102,7 +98,7 @@ Para importar los datos ("datos.csv") en el objeto denominado `datos` (un data f
 
 La tabla contiene 3 columnas: "x", "y", "z", donde las dos primeras corresponden con las coordenadas y la tercera corresponde con la variable de interés. Para mayor facilidad se define la variable en un objeto `myvar`, que podrá ser reutilizado.
 
-Se puede obtener un resumen estadístico de la variable por medio de la función `descr` del paquete **summarytools** [@R-summarytools], el cual es trabajado para mostrar solo lo necesario. La Tabla \@ref(tab:AED) se genera con la función `kable` del paquete **kableExtra**, donde se pueden modificar aspectos como los nombres de las columnas, la cantidad de dígitos a usar, el alineado de las columnas, y el encabezado de la tabla. Adicionalmente se guarda la varianza de la variable en el objeto `S`.
+Se puede obtener un resumen estadístico de la variable por medio de la función `descr` del paquete **summarytools** [@R-summarytools], el cual es trabajado para mostrar solo lo necesario. El Cuadro \@ref(tab:AED) se genera con la función `kable` del paquete **kableExtra**, donde se pueden modificar aspectos como los nombres de las columnas, la cantidad de dígitos a usar, el alineado de las columnas, y el encabezado de la tabla. Adicionalmente se guarda la varianza de la variable en el objeto `S`.
 
 ```{r AED, fig.cap='Histograma de la variable. La línea roja corresponde con la media, y la curva azul con la curva de densidad empírica.'}
 datos = import(here('data','datos.csv'), setclass = 'tbl')
@@ -134,7 +130,7 @@ gg.hist
 
 El histograma (Figura \@ref(fig:AED)) se construye con **ggplot2**, donde se remite al lector a consultar @garnier-villarreal2020 (Capítulo 4) para una guía de como usar este paquete de una forma más amplia. De manera general, hace uso de data frames (tablas) y sus variables de una forma directa, donde dependiendo de lo que se quiere graficar se emplean diferentes geomestrías (`geom_*`), y tiene otra serie de funciones para personalizar el gráfico.
 
-Para pasar los datos a formato espacial se usa la función `st_as_sf` del paquete **sf**, donde se definen las columnas donde se ubican las coordenadas (`coords`, siempre primero 'x' y luego 'y'), y el sistema de referencia (`crs`), donde en este caso no corresponde a ninguno entonces se usa `NA`, pero sino se usaria el código *epsg* respectivo. El resto de acciones son para pasos posteriores y no es necesario modificarlas. Se crean dos objetos espaciales, uno tipo **sf** y uno **sp** ya que a veces es necesario uno sobre otro, dependiendo de la función, pero en general se trabaja con el **sf**.
+El primer paso es generar un objeto espacial. Para pasar los datos a formato espacial se usa la función `st_as_sf` del paquete **sf**, donde se definen las columnas donde se ubican las coordenadas (`coords`, siempre primero 'x' y luego 'y'), y el sistema de referencia (`crs`), donde en este caso no corresponde a ninguno entonces se usa `NA`, pero sino se usaria el código *epsg* respectivo. El resto de acciones son para pasos posteriores y no es necesario modificarlas. Se crean dos objetos espaciales, uno tipo **sf** y uno **sp** ya que a veces es necesario uno sobre otro, dependiendo de la función, pero en general se trabaja con el **sf**.
 
 ```{r datos-sf}
 datos_sf = st_as_sf(datos, coords = 1:2, crs = NA) %>% 
@@ -189,9 +185,9 @@ gg.map.pts = ggplot() +
 gg.map.pts
 ```
 
-El siguiente código no se ejecuta, ya que genera un mapa interactivo que no se puede desplegar aquí, pero se incluye para referencia y en caso de que se quiera utilizar. Para este mapa se usa el paquete **mapview** [@R-mapview] y para los colores se usa el paquete **RColorBrewer** [@R-RColorBrewer]. Consultar @garnier-villarreal2020 (Capítulo 6) para más información sobre el uso de **R** para datos espaciales.
+El siguiente código genera un mapa interactivo (que no se incluye en el artículo principal porque no se puede desplegar adecuadamente, pero se incluye aquí ya que el formato *html* sí permite interactividad). Para este mapa se usa el paquete **mapview** [@R-mapview] y para los colores se usa el paquete **RColorBrewer** [@R-RColorBrewer]. Consultar @garnier-villarreal2020 (Capítulo 6) para más información sobre el uso de **R** para datos espaciales.
 
-```{r eval=F}
+```{r eval=T}
 mapview(outline, alpha.regions = 0, layer.name='Borde', 
         homebutton = F, legend = F, native.crs = F) + 
   mapview(datos_sf, zcol = myvar, alpha=0.1, 
@@ -293,6 +289,18 @@ mod = "Sph" # modelo a ajustar (esférico)
 rango = 30 # rango
 ```
 
+El paquete **gstat** ya viene con modelos definidos, por lo que el usuario debe seleccionar el modelo que considera apropiado. La Figura \@ref(fig:gstat-mods) muestra los diferentes modelos disponibles (nombre en comillas). Para los modelos mencionados en la parte de teoría los nombres usados por **gstat** serían: 'Sph' para esférico, 'Exp' para exponencial, 'Gau' para gaussiano, y 'Pot' para potencia.
+
+```{r eval=FALSE}
+show.vgms()
+```
+
+(ref:gstat-mods) Modelos disponibles en **gstat**.
+
+```{r gstat-mods, echo=FALSE, out.width='100%', fig.cap='(ref:gstat-mods)'}
+knitr::include_graphics(here('images','gstat-mods.png'))
+```
+
 Se usa la función `fit.variogram`, que realiza un ajuste automático, con los argumentos del variograma experimental y el modelo (`model`) que se define por medio de la función `vgm`, usando los valores iniciales definidos arriba.
 
 ```{r ajuste, eval=TRUE}
@@ -315,7 +323,7 @@ varmod = dat.fit # modelo ajustado
 varmod
 ```
 
-Para crear la Tabla \@ref(tab:ajuste-tab) de nuevo se hace uso de la función `kable` con sus respectivos argumentos.
+Para crear el Cuadro \@ref(tab:ajuste-tab) de nuevo se hace uso de la función `kable` con sus respectivos argumentos.
 
 ```{r ajuste-tab}
 varmod %>% 
@@ -361,7 +369,7 @@ variog.dir = map_dfr(d, ~variogramLine(object = varmod,
 
 gg.omni.fit = variog.dir %>% 
   ggplot(aes(dist,gamma)) + 
-  geom_point(data = dat.vgm,shape=1,size=2) +
+  geom_point(data = dat.vgm,shape=3,size=2) +
   geom_line(size=1)  +
   labs(x = x_var, y = y_var) +
   coord_cartesian(ylim = c(0,max(dat.vgm$gamma)))
@@ -375,7 +383,7 @@ gg.omni.fit
 
 gg.dir.fit = variog.dir %>% 
   ggplot(aes(dist,gamma,col=dir.hor)) + 
-  geom_point(data = dat.vgm2.gg,shape=1,size=1.5) +
+  geom_point(data = dat.vgm2.gg,shape=3,size=1.5) +
   geom_line(size=1) + 
   scale_color_brewer(palette = 'Dark2') +
   labs(x = x_var, y = y_var, col = 'Dirección') +
@@ -430,7 +438,7 @@ metricas = tibble(metric = c('$RMSE$','$MSDR$','$r$','$R^2$','$MAPE$','$G$'),
 
 Para dar el formato apropiado a los resultados, según los estándares de APA -@americanpsychologicalassociation2010, se usa la función `apa` del paquete **MOTE** [@R-MOTE], donde se define el valor a formatear, el número de decimales, y si se incluye el '0' al inicio. Datos que no pueden ser superiores a 1 o inferiores a -1 se reportan sin el '0' al inicio, de ahí que $r$, $R^2$, $MAPE$, y $G$ se reportan de esta forma.
 
-Para crear la Tabla \@ref(tab:xval-metrics-tab) de nuevo se hace uso de la función `kable` con sus respectivos argumentos.
+Para crear el Cuadro \@ref(tab:xval-metrics-tab) de nuevo se hace uso de la función `kable` con sus respectivos argumentos.
 
 ```{r xval-metrics-tab}
 metricas %>% 
@@ -446,7 +454,7 @@ Los resultados de la validación cruzada (Figura \@ref(fig:xval-plots)) se puede
 
 ```{r xval-plots1, fig.cap='Relación entre los valores observados y predecidos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos.', out.width='80%'}
 gg.xval1 = ggplot(as.data.frame(kcv.ok), aes(var1.pred, observed)) + 
-  geom_point(col = "blue", shape = 1, size = 1.25) + 
+  geom_point(col = "blue", shape = 3, size = 1.25) + 
   coord_fixed() + 
   geom_abline(slope = 1, col = "red", size = 1.25) + 
   geom_smooth(se = F, method = 'lm', col = 'green', size = 1.25) +

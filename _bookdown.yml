@@ -1,7 +1,7 @@
 language:
   label:
     fig: 'Figura '
-    tab: 'Tabla '
+    tab: 'Cuadro '
     eq: 'Ecuacion '
     thm: 'Teorema '
     lem: 'Lema '
