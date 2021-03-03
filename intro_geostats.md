@@ -237,13 +237,13 @@ Dado que que objetivo de la interpolación es predecir valores en puntos donde n
 
 El tipo de validación cruzada más usado es *LOO* (leave-one-out), donde se deja por fuera una observación a la vez, se re-ajusta el modelo y se predice el valor de la variable para cada observación por separado [@goovaerts1997; @isaaks1989; @oliver2014c; @webster2007]. El paquete **gstat** ofrece esta opción (por defecto) y la opción de *K-Fold*. En *K-Fold* se escoge una cantidad de grupos (*K*) en los que se dividen las observaciones (típicamente 5 o 10) y se deja un grupo de observaciones por fuera cada vez, se re-ajusta el modelo, se predice el valor de la variable para todas las observaciones del grupo que se dejó por fuera, y este proceso se repite *K* veces hasta tener predicciones para todos los puntos [@hastie2008; @james2013; @kuhn2013; @witten2011].
 
-Una vez realizado el ajuste y la validación cruzada del modelo se obtienen valores predecidos y observados para cada punto. Con esta información se pueden usar diferentes métricas, donde lo ideal sería comparar cada una de estas métricas para diferentes modelos ajustados, y se escogería el modelo que obtenga mejores métricas [@chiles1999; @goovaerts1997; @isaaks1989; @oliver2014c; @webster2007].
+Una vez realizado el ajuste y la validación cruzada del modelo se obtienen valores predichos y observados para cada punto. Con esta información se pueden usar diferentes métricas, donde lo ideal sería comparar cada una de estas métricas para diferentes modelos ajustados, y se escogería el modelo que obtenga mejores métricas [@chiles1999; @goovaerts1997; @isaaks1989; @oliver2014c; @webster2007].
 
 Dentro de las métrica más usadas están [@oliver2014c; @webster2007; @yao2013po]: 
 
-En estas métricas $N$ es el total de observaciones (puntos), $Y_i$ es el valor observado en el punto $i$, $\hat{Y_i}$ es el valor predecido en el punto $i$, $s^2_{ei}$ es el error/varianza de la predicción, y $\bar{Y}$ es la media (promedio) de la variable.
+En estas métricas $N$ es el total de observaciones (puntos), $Y_i$ es el valor observado en el punto $i$, $\hat{Y_i}$ es el valor predicho en el punto $i$, $s^2_{ei}$ es el error/varianza de la predicción, y $\bar{Y}$ es la media (promedio) de la variable.
 
-- Error medio ($ME$): El error corresponde con los residuales de lo observado menos lo predecido, una vez se tienen estos valores se les calcula la media e idealmente se esperaría obtener un valor cercano a 0. Se calcula mediante la Ecuación \@ref(eq:xval-me) y al comparar modelos se escogería el modelo que presente un valor más cercano a 0.
+- Error medio ($ME$): El error corresponde con los residuales de lo observado menos lo predicho, una vez se tienen estos valores se les calcula la media e idealmente se esperaría obtener un valor cercano a 0. Se calcula mediante la Ecuación \@ref(eq:xval-me) y al comparar modelos se escogería el modelo que presente un valor más cercano a 0.
 
 \begin{equation}
   ME = \frac{1}{N} \sum_{i=1}^{N} (Y_i-\hat{Y_i})
@@ -264,7 +264,7 @@ En estas métricas $N$ es el total de observaciones (puntos), $Y_i$ es el valor 
   (\#eq:xval-msdr)
 \end{equation}
 
-- Error Porcentual Absoluto Medio ($MAPE$): Es una medida porcentual de la diferencia entre lo observado y lo predecido, con un rango de 0 a 1 o de 0 a 100 si se multiplica por 100. Se esperaría que este valor ande cerca de 0 o lo más bajo posible. Se calcula mediante la Ecuación \@ref(eq:xval-mape) y comparando modelos se escogería el que presente el $MAPE$ más bajo.
+- Error Porcentual Absoluto Medio ($MAPE$): Es una medida porcentual de la diferencia entre lo observado y lo predicho, con un rango de 0 a 1 o de 0 a 100 si se multiplica por 100. Se esperaría que este valor ande cerca de 0 o lo más bajo posible. Se calcula mediante la Ecuación \@ref(eq:xval-mape) y comparando modelos se escogería el que presente el $MAPE$ más bajo.
 
 \begin{equation}
   MAPE = \frac{1}{N} \sum_{i=1}^{N} \Big| \frac{(Y_i-\hat{Y_i})}{Y_i} \Big|
@@ -468,9 +468,9 @@ Con el modelo ajustado se puede visualizar éste sobre el variograma omnidirecci
 
 Para evaluar de manera más realista el ajuste de cualquier modelo es mejor usar la validación cruzada. Es en este paso que se podrían probar diferentes modelos, donde se obtienen las métricas de ajuste de un modelo, se ajusta un nuevo modelo y se obtienen sus métricas de ajuste, y así iterativamente. Una vez ajustados diferentes modelos y con sus diferentes métricas, se puede tener un criterio más robusto de cuál modelo se ajusta mejor a los datos. 
 
-Las métricas usadas aquí son las que se introdujeron anteriormente: el error cuadrático medio ($RMSE$), la razón de desviación cuadrática media ($MSDR$), el error porcentual absoluto medio ($MAPE$), y el estadístico de bondad de predicción ($G$). Adicionalmente se estima la correlación ($r$) entre los valores observados y predecidos, donde lo que se busca es determinar qué tan similares son los valores entre si (Figura \@ref(fig:xval-plots) **A**).
+Las métricas usadas aquí son las que se introdujeron anteriormente: el error cuadrático medio ($RMSE$), la razón de desviación cuadrática media ($MSDR$), el error porcentual absoluto medio ($MAPE$), y el estadístico de bondad de predicción ($G$). Adicionalmente se estima la correlación ($r$) entre los valores observados y predichos, donde lo que se busca es determinar qué tan similares son los valores entre si (Figura \@ref(fig:xval-plots) **A**).
 
-<!-- Para realizar la validación cruzada se usa la función `krige.cv`, con los argumentos de la fórmula, datos espaciales, y el modelo ajustado, usando el método *LOO* por defecto. El objeto resultante va a contener los valores predecidos (`var1.pred`), la varianza de las predicciones (`var1.var`), los valores observados (`observed`), y los residuales (`residual`). -->
+<!-- Para realizar la validación cruzada se usa la función `krige.cv`, con los argumentos de la fórmula, datos espaciales, y el modelo ajustado, usando el método *LOO* por defecto. El objeto resultante va a contener los valores predichos (`var1.pred`), la varianza de las predicciones (`var1.var`), los valores observados (`observed`), y los residuales (`residual`). -->
 
 
 
@@ -496,7 +496,7 @@ Si recordamos el error del ajuste inicial sobre los datos que se realizó el aju
 
 
 
-(ref:xval-plots) Análisis de los resultados de validación cruzada. **A** Relación entre los valores observados y predecidos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos. **B** Histograma de los residuales de la validación cruzada. La línea roja es la media de los residuales y la curva azul la curva de densidad.
+(ref:xval-plots) Análisis de los resultados de validación cruzada. **A** Relación entre los valores observados y predichos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos. **B** Histograma de los residuales de la validación cruzada. La línea roja es la media de los residuales y la curva azul la curva de densidad.
 
 <div class="figure" style="text-align: center">
 <img src="figures/xval-plots-1.png" alt="(ref:xval-plots)" width="80%" />
@@ -511,7 +511,7 @@ Las métricas tanto como los residuales indican que el modelo ajustado es un mod
 
 Para recalcar nuevamente, el análisis geoestadístico es un proceso que conlleva el calculo del variograma, el ajuste de un modelo, la validación del modelo a usar, y por último la interpolación mediante Kriging. Si no se realizan con cuidado los pasos el resultado de la interpolación puede no tener validez o sentido.
 
-<!-- La interpolación por Kriging es se realiza por medio de la función `krige`, la cual tiene como argumentos la fórmula, los datos espaciales, la grilla a interpolar, y el modelo ajustado seleccionado. El resultado va a contener dos atributos o columnas: los valores predecidos (estimados) en `var1.pred` y la varianza (error) de la predicción (estimación) en `var1.var`. -->
+<!-- La interpolación por Kriging es se realiza por medio de la función `krige`, la cual tiene como argumentos la fórmula, los datos espaciales, la grilla a interpolar, y el modelo ajustado seleccionado. El resultado va a contener dos atributos o columnas: los valores predichos (estimados) en `var1.pred` y la varianza (error) de la predicción (estimación) en `var1.var`. -->
 
 
 ```

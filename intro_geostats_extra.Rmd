@@ -223,7 +223,7 @@ gg.omni.exp = ggplot(dat.vgm,aes(x = dist, y = gamma)) +
   geom_hline(yintercept = S, col = 'red', linetype = 2) +
   ylim(0, max(dat.vgm$gamma)) +
   xlim(0, max(dat.vgm$dist)) + 
-  geom_text_repel(aes(label = np), size = 3)
+  geom_text_repel(aes(label = np), size = 2)
 gg.omni.exp
 ```
 
@@ -273,7 +273,7 @@ gg.dir.exp = ggplot(dat.vgm2.gg,aes(x = dist, y = gamma,
   xlim(0, max(dat.vgm2$dist)) + 
   scale_color_brewer(palette = 'Dark2') +
   facet_wrap(~dir.hor) + 
-  geom_text_repel(aes(label = np), size = 3, show.legend = F) +
+  geom_text_repel(aes(label = np), size = 2, show.legend = F) +
   theme(legend.position = 'top')
 gg.dir.exp
 ```
@@ -394,7 +394,7 @@ gg.dir.fit
 
 ### Validación cruzada
 
-La validación cruzada se realiza por medio de la función `krige.cv`, con los argumentos siendo la fórmula, los datos espaciales (`locations`), y el modelo ajustado (`model`), donde por defecto usa el método *LOO*. Si se quisiera usar *K-fold* se puede definir el argumento `nfold = K`, donde `K` es el número de grupos a crear. El objeto resultante (`kcv.ok`) va a contener los valores predecidos (`var1.pred`), la varianza de las predicciones (`var1.var`), los valores observados (`observed`), y los residuales (`residual`).
+La validación cruzada se realiza por medio de la función `krige.cv`, con los argumentos siendo la fórmula, los datos espaciales (`locations`), y el modelo ajustado (`model`), donde por defecto usa el método *LOO*. Si se quisiera usar *K-fold* se puede definir el argumento `nfold = K`, donde `K` es el número de grupos a crear. El objeto resultante (`kcv.ok`) va a contener los valores predichos (`var1.pred`), la varianza de las predicciones (`var1.var`), los valores observados (`observed`), y los residuales (`residual`).
 
 ```{r xval, eval=TRUE, message=FALSE}
 kcv.ok = krige.cv(myformula, 
@@ -402,7 +402,7 @@ kcv.ok = krige.cv(myformula,
                   model = varmod)
 ```
 
-El siguiente bloque de código muestra cómo se calculan las diferentes métricas, ya sea usando funciones ya disponibles (objetos `xval.mape`,`correl`, usando funciones `MAPE` y `CorCI` del paquete **DescTools** [@R-DescTools]) o escribiendo la fórmula necesaria (objetos `xval.rmse`, `xval.msdr`, `xval.g`). Para el coeficiente de determinación (`xval.r2`) se ajusta un modelo lineal (`lm`) entre los valores predecidos y observados, y se extrae esta métrica del objeto resultante.
+El siguiente bloque de código muestra cómo se calculan las diferentes métricas, ya sea usando funciones ya disponibles (objetos `xval.mape`,`correl`, usando funciones `MAPE` y `CorCI` del paquete **DescTools** [@R-DescTools]) o escribiendo la fórmula necesaria (objetos `xval.rmse`, `xval.msdr`, `xval.g`). Para el coeficiente de determinación (`xval.r2`) se ajusta un modelo lineal (`lm`) entre los valores predichos y observados, y se extrae esta métrica del objeto resultante.
 
 ```{r xval-metrics, include=TRUE}
 cl = .95 # nivel de confianza
@@ -452,13 +452,13 @@ metricas %>%
 
 Los resultados de la validación cruzada (Figura \@ref(fig:xval-plots)) se pueden visualizar con **ggplot2**, transformando el resultado en un data frame `as.data.frame(kcv.ok)`. 
 
-```{r xval-plots1, fig.cap='Relación entre los valores observados y predecidos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos.', out.width='80%'}
+```{r xval-plots1, fig.cap='Relación entre los valores observados y predichos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos.', out.width='80%'}
 gg.xval1 = ggplot(as.data.frame(kcv.ok), aes(var1.pred, observed)) + 
   geom_point(col = "blue", shape = 3, size = 1.25) + 
   coord_fixed() + 
   geom_abline(slope = 1, col = "red", size = 1.25) + 
   geom_smooth(se = F, method = 'lm', col = 'green', size = 1.25) +
-  labs(x = "Predecidos", y = "Observados")
+  labs(x = "Predichos", y = "Observados")
 ```
 
 ```{r xval-plots2, fig.cap='Histograma de los residuales de la validación cruzada. La linea roja es la media de los residuales y la curva azul la curva de densidad.', out.width='80%'}
@@ -472,7 +472,7 @@ gg.xval2 = ggplot(as.data.frame(kcv.ok), aes(residual)) +
 
 En este caso se generan los dos gráficos (**A** y **B**) por aparte y se ponen en uno solo usando la sintáxis del paquete **patchwork** [@R-patchwork].
 
-```{r xval-plots, fig.cap='Análisis de los resultados de validación cruzada. **A** Relación entre los valores observados y predecidos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos. **B** Histograma de los residuales de la validación cruzada. La linea roja es la media de los residuales y la curva azul la curva de densidad.', out.width='80%'}
+```{r xval-plots, fig.cap='Análisis de los resultados de validación cruzada. **A** Relación entre los valores observados y predichos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos. **B** Histograma de los residuales de la validación cruzada. La linea roja es la media de los residuales y la curva azul la curva de densidad.', out.width='80%'}
 gg.xval = gg.xval1 + gg.xval2 + plot_annotation(tag_levels = 'A')
 gg.xval
 ```
@@ -488,7 +488,7 @@ ok = krige(myformula,
            model = varmod)
 ```
 
-El resultado, objeto `stars`, va a contener dos columnas: los valores predecidos (estimados) en `var1.pred` y la varianza (error) de la predicción (estimación) en `var1.var`. El argumento más importante para la visualización de los resultados (usando **ggplot2** y la geometría `geom_stars`) es el `aes(fill)` donde se define la columna (resultado) a visualizar (predicción o varianza). 
+El resultado, objeto `stars`, va a contener dos columnas: los valores predichos (estimados) en `var1.pred` y la varianza (error) de la predicción (estimación) en `var1.var`. El argumento más importante para la visualización de los resultados (usando **ggplot2** y la geometría `geom_stars`) es el `aes(fill)` donde se define la columna (resultado) a visualizar (predicción o varianza). 
 
 ```{r mapa-pred, warning=FALSE, fig.cap='Mapa de predicción de la variable de interés.', out.width='90%'}
 gg.pred = ggplot() + 
