@@ -86,11 +86,11 @@ y_vmap = "Distancia N-S [m]"
 
 # Introducción
 
-Este material extra muestra todo el código en **R** que se usó en la sección Análisis geoestadístico del artículo principal. Se limita únicamente a la explicación básica de cuál código se usó para qué, y de cómo se usa. Para la base teórica, interpretación y análisis se remite al lector al artículo principal.
+Este material extra muestra todo el código en **R** [@R-base] que se usó en la sección Análisis geoestadístico del artículo principal. Se limita únicamente a la explicación básica de cuál código se usó para qué, y de cómo se usa. Para la base teórica, interpretación y análisis se remite al lector al artículo principal.
 
 # Análisis geoestadístico {#geostats-analisis}
 
-Se va a hacer uso del paquete **gstat** [@R-gstat] para la parte geoestadística, y para la manipulación de los datos se usan **dplyr** [@R-dplyr], **tidyr** [@R-tidyr] y **broom** [@R-broom], para los gráficos se usa **ggplot2** [@R-ggplot2; @ggplot22016], para las tablas se usa **kableExtra** [@R-kableExtra], y para la creación y manipulación de objetos espaciales se usan **sf** [@R-sf], **sp** [@R-sp], y **stars** [@R-stars].
+Se va a hacer uso del paquete **gstat** [@R-gstat; @gstat2004; @gstat2016] para la parte geoestadística, y para la manipulación de los datos se usan **dplyr** [@R-dplyr], **tidyr** [@R-tidyr] y **broom** [@R-broom], para los gráficos se usa **ggplot2** [@R-ggplot2; @ggplot22016], para las tablas se usa **kableExtra** [@R-kableExtra], y para la creación y manipulación de objetos espaciales se usan **sf** [@R-sf; @sf2018], **sp** [@R-sp; @sp2005; @sp2013], y **stars** [@R-stars].
 
 ## Análisis Exploratorio de Datos
 
@@ -535,6 +535,9 @@ allref = c(readLines('bib/geostats.bib'),
            '\n',
            readLines('bib/knit.bib'),
            '\n',
-           readLines('bib/packages.bib'))
+           readLines('bib/packages.bib') %>% 
+             str_replace('Manual','software') %>% 
+             str_replace('note','version') %>% 
+             str_replace('R package version','paquete de R'))
 writeLines(allref,'bib/all.bib')
 ```

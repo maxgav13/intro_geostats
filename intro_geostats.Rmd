@@ -360,7 +360,7 @@ Los tipos de Kriging más comunes son [@chiles1999; @goovaerts1997; @isaaks1989;
 
 Una vez presentada la teoría básica de la geoestadística se va a proceder a realizar un análisis geoestadístico típico (con el objetivo de estimar la variable en el espacio) en un set de datos simulados. Se usan datos simulados para que el enfoque sea más en el proceso y no tanto en la variable en si, la cual puede ser porosidad, densidad, espesor, etc., o cualquier variable numérica de interés. 
 
-Se va a hacer uso de **R** que permite manipular y analizar datos (espaciales y no espaciales), y además tiene diversos paquetes (librerías) para realizar análisis geoestadísticos [@finley2015jss; @jing2015jss; @ribeiro2003p3iwdsc; @R-gstat]. El código usado, así como su explicación, se pueden encontrar en el material extra disponible en el repositorio de GitHub del trabajo: https://github.com/maxgav13/intro_geostats.
+Se va a hacer uso de **R** que permite manipular y analizar datos (espaciales y no espaciales), y además tiene diversos paquetes (librerías) para realizar análisis geoestadísticos [@finley2015jss; @jing2015jss; @ribeiro2003p3iwdsc; @R-gstat; @gstat2004; @gstat2016]. El código usado, así como su explicación, se pueden encontrar en el material extra disponible en el repositorio de GitHub del trabajo: https://github.com/maxgav13/intro_geostats.
 
 <!-- Aquí se presenta el uso del paquete **gstat** [@R-gstat], que es uno de los más usados, ya presenta una gran cantidad de funciones disponibles. Para la manipulación de los datos se usan principalmente **dplyr** [@R-dplyr], **tidyr** [@R-tidyr] y **broom** [@R-broom], para la creación de gráficos se usa **ggplot2** [@R-ggplot2; @ggplot22016], y para la creación y trato de objetos espaciales se usan **sf** [@R-sf], **sp** [@R-sp], y **stars** [@R-stars]. -->
 
@@ -504,7 +504,7 @@ Habiendo estudiado la variable y hecho los pasos iniciales de manipulación, an�
 
 ### Variograma experimental
 
-El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Aquí se empieza a hacer uso del paquete **gstat**. En la construcción del variograma expermiental se deben definir los argumentos de el intervalo de distancia deseado ($h$), y la distancia máxima a la cual calcular la semivarianza. Si recordamos la distancia máxima era `r apa(max(distancias),2)`, por lo que se escoge un valor ligeramente inferior a la mitad. Es en este paso donde el usuario puede probar diferentes valores para obtenes un variograma representativo.
+El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Se va a hacer uso del paquete **gstat** [@R-gstat; @gstat2004; @gstat2016] para la geoestadística. En la construcción del variograma expermiental se deben definir los argumentos de el intervalo de distancia deseado ($h$), y la distancia máxima a la cual calcular la semivarianza. Si recordamos la distancia máxima era `r apa(max(distancias),2)`, por lo que se escoge un valor ligeramente inferior a la mitad. Es en este paso donde el usuario puede probar diferentes valores para obtener un variograma representativo.
 
 <!-- donde es conveniente crear un objeto `gstat` en el cual se definen los datos a usar y la variable de interés. Para definir la variable de interés se usa la sintaxis de fórmula de la siguiente forma: `variable ~ 1`, que sería similar a definir un modelo lineal para sólo el intercepto (`y ~ 1`). En este caso, y para facilidad, se guardó el nombre de la variable ('z') en el objeto `myvar`. -->
 
@@ -871,7 +871,10 @@ allref = c(readLines('bib/geostats.bib'),
            '\n',
            readLines('bib/knit.bib'),
            '\n',
-           readLines('bib/packages.bib'))
+           readLines('bib/packages.bib') %>% 
+             str_replace('Manual','software') %>% 
+             str_replace('note','version') %>% 
+             str_replace('R package version','paquete de R'))
 writeLines(allref,'bib/all.bib')
 ```
 
