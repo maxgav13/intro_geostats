@@ -147,7 +147,7 @@ Si los datos se encuentran ordenados en una grilla regular se puede usar la sepa
 (ref:semivar) Esquema del calculo de la semivarianza para datos regularmente espaciados, donde los datos están completos (a) y donde hay datos faltantes (b); para datos irregularmente espaciados (c). Modificado de @webster2007.
 
 ```{r semivar, echo=FALSE, fig.cap='(ref:semivar)'}
-knitr::include_graphics(here('images','semivar.png'))
+knitr::include_graphics(here('images','F01.png'))
 ```
 
 ## Variograma experimental
@@ -159,7 +159,7 @@ El cálculo de la semivarianza y su representación por medio del variograma exp
 (ref:variograma) Ejemplo de variogramas experimentales: **A** Mostrando la relación (dependencia) espacial de la variable, **B** Mostrando la ausencia de relación (dependencia) espacial de la variable.
 
 ```{r variograma, echo=FALSE, fig.cap='(ref:variograma)'}
-knitr::include_graphics(here('images','variograma-exp-2.png'))
+knitr::include_graphics(here('images','F02.png'))
 ```
 
 ## Modelo de variograma
@@ -170,10 +170,10 @@ El variograma experimental es una representación discreta de la relación espac
 
 La partes o parámetros que definen a un modelo de variograma se muestran en la Figura \@ref(fig:modelo-variog), y son [@isaaks1989; @sarma2009; @webster2007]:
 
-(ref:modelo-variog) Modelo de variograma mostrando las partes: meseta, pepita, y rango. Tomado de @webster2007.
+(ref:modelo-variog) Modelo de variograma mostrando las partes: meseta, pepita, y rango. Modificado de @webster2007.
 
 ```{r modelo-variog, echo=FALSE, fig.cap='(ref:modelo-variog)'}
-knitr::include_graphics(here('images','variogram.png'))
+knitr::include_graphics(here('images','F03.png'))
 ```
 
 - Meseta total ($S$, sill en inglés): Valor del variograma o semivarianza cuando la distancia $h$ tiende a infinito (cuando la semivarianza se estabiliza), y por lo general es muy similar al valor de la varianza de la variable de interés.
@@ -191,7 +191,7 @@ Aquí se exponen los principales tipos de modelos que se usan en geociencias [@g
 (ref:variog-modelos) Modelos más usados en geociencias: **A** Potencia, **B** Esférico, **C** Exponencial, **D** Gaussiano. Modificado de @sarma2009.
 
 ```{r variog-modelos, eval=TRUE, echo=FALSE, fig.cap='(ref:variog-modelos)', out.width='90%'}
-knitr::include_graphics(here('images','variog-modelos.png'))
+knitr::include_graphics(here('images','F04.png'))
 ```
 
 - Potencia
@@ -263,7 +263,7 @@ La Figura \@ref(fig:variog-comparacion) es una comparación de los tres modelos 
 (ref:variog-comparacion) Comparación visual de los tres modelos más usados en geociencias, todos representando la misma estructura ($C_0=0$, $C_1=30$, y $a=210$).
 
 ```{r variog-comparacion, echo=FALSE, fig.cap='(ref:variog-comparacion)', out.width='90%'}
-knitr::include_graphics(here('images','variog-comparacion.png'))
+knitr::include_graphics(here('images','F05.png'))
 ```
 
 ## Anisotropía
@@ -343,7 +343,7 @@ knitr::include_graphics(here('images','kriging-pesos.png'))
 
 Dentro de las ventajas del Kriging están que compensa por efectos de agrupamiento (clustering) al dar menos peso individual a puntos dentro del agrupamiento que a puntos aislados, y da una estimación de la variable y del error (varianza de Kriging) [@chiles1999; @goovaerts1997; @isaaks1989; @trauth2015; @webster2007]. El resultado de la interpolación por medio Kriging, por lo general, suaviza los resultados, y sobre-estima valores pequeños y sub-estima valores grandes [@oliver2014c; @webster2007].
 
-Kriging es un método general con diferentes variantes dependiendo de la información que se tenga, el tipo de variable, y la cantidad y tipos de variables a considerar. **Es más recomendado usar Kriging cuando los datos están normalmente distribuidos, se tiene una buena cantidad de observaciones (depende pero 30, 40 o más es lo recomendado), son estacionarios (la media y varianza de la variable no varían significativamente, esto puede subsanarse con diferentes variantes), y hay una dependencia espacial de la variable (variograma muestra un incremento de la semivarianza con la distancia)** [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. 
+Kriging es un método general con diferentes variantes dependiendo de la información que se tenga, el tipo de variable, y la cantidad y tipos de variables a considerar. A manera más general también puede incorporar información temporal, por lo que se puede determinar y modelar la variación espacio-temporal de la variable o variables. **Es más recomendado usar Kriging cuando los datos están normalmente distribuidos, se tiene una buena cantidad de observaciones (depende pero 30, 40 o más es lo recomendado), son estacionarios (la media y varianza de la variable no varían significativamente, esto puede subsanarse con diferentes variantes), y hay una dependencia espacial de la variable (variograma muestra un incremento de la semivarianza con la distancia)** [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. 
 
 Los tipos de Kriging más comunes son [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]:
 
@@ -361,8 +361,6 @@ Los tipos de Kriging más comunes son [@chiles1999; @goovaerts1997; @isaaks1989;
 Una vez presentada la teoría básica de la geoestadística se va a proceder a realizar un análisis geoestadístico típico (con el objetivo de estimar la variable en el espacio) en un set de datos simulados. Se usan datos simulados para que el enfoque sea más en el proceso y no tanto en la variable en si, la cual puede ser porosidad, densidad, espesor, etc., o cualquier variable numérica de interés. 
 
 Se va a hacer uso de **R** que permite manipular y analizar datos (espaciales y no espaciales), y además tiene diversos paquetes (librerías) para realizar análisis geoestadísticos [@finley2015jss; @jing2015jss; @ribeiro2003p3iwdsc; @R-gstat; @gstat2004; @gstat2016]. El código usado, así como su explicación, se pueden encontrar en el material extra disponible en el repositorio de GitHub del trabajo: https://github.com/maxgav13/intro_geostats.
-
-<!-- Aquí se presenta el uso del paquete **gstat** [@R-gstat], que es uno de los más usados, ya presenta una gran cantidad de funciones disponibles. Para la manipulación de los datos se usan principalmente **dplyr** [@R-dplyr], **tidyr** [@R-tidyr] y **broom** [@R-broom], para la creación de gráficos se usa **ggplot2** [@R-ggplot2; @ggplot22016], y para la creación y trato de objetos espaciales se usan **sf** [@R-sf], **sp** [@R-sp], y **stars** [@R-stars]. -->
 
 ```{r data, eval=FALSE, include=FALSE}
 set.seed(0987)
