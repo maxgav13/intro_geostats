@@ -10,7 +10,7 @@ affiliation:
 keywords: ['Geoestadística','Kriging','R','Variograma','Interpolación','Validación cruzada']
 abstract: |
   Kriging, el método de interpolación asociado a geoestadística, se ha usado y ha sido propuesto como el mejor método de interpolación, muchas veces sin realmente entender cómo es que se usa adecuadamente y dejando que el software que lo brinda decida cómo implementarlo. Esta aseveración tiene fundamento cuando se procede de la manera correcta, realizando los pasos necesarios durante el análisis y modelado geoestadístico, por lo que es necesario entender cómo aplicar Kriging correctamente para que los resultados obtenidos sean relevantes y confiables. Estos pasos se detallan en este trabajo, abordando la teoría, y mediante un ejemplo se pone en práctica el método usando el software estadístico libre **R**. Adicionalmente, se presenta una aplicación web de libre acceso para quienes no se sientan cómodos usando lenguajes de programación.
-# date: "03 March 2021"
+# date: "11 March 2021"
 lang: es
 bibliography: ["bib/all.bib"]
 # biblio-style: apalike2
@@ -66,7 +66,7 @@ Para el procesamiento de los datos y la implementación de la geoestadística se
 
 De manera resumida y sin entrar en mucho detalle se mencionan diferentes métodos de interpolación comúnmente usados, para ellos se puede consultar @webster2007. De manera general se tienen: Polígonos de Thiessen, Triangulación, Vecinos naturales (natural neighbours), Inverso de la distancia (inverse distance), Superficies de tendencia (trend surface), Ajuste polinomial (splines), y **Kriging**.
 
-El método de Kriging es lo que más se asocia con la geoestadística, y va a ser el énfasis de lo aquí presentado. El Kriging es considerado como el método más robusto y preciso, de ahí que en inglés es conocido como **blue** que quiere decir **b**est **l**inear **u**nbiased **e**stimator, y se puede traducir como **mejor estimador lineal no sesgado** [@isaaks1989; @webster2007].
+El método de Kriging es lo que más se asocia con la geoestadística, y va a ser el énfasis de lo aquí presentado. El Kriging es considerado como el método más robusto y preciso, de ahí que en inglés es conocido como **blue** que quiere decir **b**est **l**inear **u**nbiased **e**stimator, y se puede traducir como **mejor estimador lineal insesgado** [@isaaks1989; @webster2007].
 
 Una ventaja de Kriging con respecto a otros métodos de interpolación más populares, es que a parte de estimar el valor de la variable de interés, estima además un error de la interpolación, lo que permite tener una idea de la calidad (incertidumbre) de los resultados [@isaaks1989; @webster2007]. El método ha sido utilizado para predecir la intensidad sísmica [@linkimer2008rgac], el nivel de agua subterránea [@varouchakis2012hsj], pérdida de suelo [@wang2003pers], y temperatura del aire [@wang2017rs], entre otras.
 
@@ -98,7 +98,7 @@ Si los datos se encuentran ordenados en una grilla regular se puede usar la sepa
 (ref:semivar) Esquema del calculo de la semivarianza para datos regularmente espaciados, donde los datos están completos (a) y donde hay datos faltantes (b); para datos irregularmente espaciados (c). Modificado de @webster2007.
 
 <div class="figure" style="text-align: center">
-<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/semivar.png" alt="(ref:semivar)" width="90%" />
+<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/F01.png" alt="(ref:semivar)" width="90%" />
 <p class="caption">(\#fig:semivar)(ref:semivar)</p>
 </div>
 
@@ -111,7 +111,7 @@ El cálculo de la semivarianza y su representación por medio del variograma exp
 (ref:variograma) Ejemplo de variogramas experimentales: **A** Mostrando la relación (dependencia) espacial de la variable, **B** Mostrando la ausencia de relación (dependencia) espacial de la variable.
 
 <div class="figure" style="text-align: center">
-<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/variograma-exp-2.png" alt="(ref:variograma)" width="90%" />
+<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/F02.png" alt="(ref:variograma)" width="90%" />
 <p class="caption">(\#fig:variograma)(ref:variograma)</p>
 </div>
 
@@ -123,10 +123,10 @@ El variograma experimental es una representación discreta de la relación espac
 
 La partes o parámetros que definen a un modelo de variograma se muestran en la Figura \@ref(fig:modelo-variog), y son [@isaaks1989; @sarma2009; @webster2007]:
 
-(ref:modelo-variog) Modelo de variograma mostrando las partes: meseta, pepita, y rango. Tomado de @webster2007.
+(ref:modelo-variog) Modelo de variograma mostrando las partes: meseta, pepita, y rango. Modificado de @webster2007.
 
 <div class="figure" style="text-align: center">
-<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/variogram.png" alt="(ref:modelo-variog)" width="90%" />
+<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/F03.png" alt="(ref:modelo-variog)" width="90%" />
 <p class="caption">(\#fig:modelo-variog)(ref:modelo-variog)</p>
 </div>
 
@@ -145,7 +145,7 @@ Aquí se exponen los principales tipos de modelos que se usan en geociencias [@g
 (ref:variog-modelos) Modelos más usados en geociencias: **A** Potencia, **B** Esférico, **C** Exponencial, **D** Gaussiano. Modificado de @sarma2009.
 
 <div class="figure" style="text-align: center">
-<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/variog-modelos.png" alt="(ref:variog-modelos)" width="90%" />
+<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/F04.png" alt="(ref:variog-modelos)" width="90%" />
 <p class="caption">(\#fig:variog-modelos)(ref:variog-modelos)</p>
 </div>
 
@@ -210,7 +210,7 @@ La Figura \@ref(fig:variog-comparacion) es una comparación de los tres modelos 
 (ref:variog-comparacion) Comparación visual de los tres modelos más usados en geociencias, todos representando la misma estructura ($C_0=0$, $C_1=30$, y $a=210$).
 
 <div class="figure" style="text-align: center">
-<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/variog-comparacion.png" alt="(ref:variog-comparacion)" width="90%" />
+<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/F05.png" alt="(ref:variog-comparacion)" width="90%" />
 <p class="caption">(\#fig:variog-comparacion)(ref:variog-comparacion)</p>
 </div>
 
@@ -293,7 +293,7 @@ Kriging es un método de interpolación (estimación), por lo que la idea es obt
 
 Dentro de las ventajas del Kriging están que compensa por efectos de agrupamiento (clustering) al dar menos peso individual a puntos dentro del agrupamiento que a puntos aislados, y da una estimación de la variable y del error (varianza de Kriging) [@chiles1999; @goovaerts1997; @isaaks1989; @trauth2015; @webster2007]. El resultado de la interpolación por medio Kriging, por lo general, suaviza los resultados, y sobre-estima valores pequeños y sub-estima valores grandes [@oliver2014c; @webster2007].
 
-Kriging es un método general con diferentes variantes dependiendo de la información que se tenga, el tipo de variable, y la cantidad y tipos de variables a considerar. **Es más recomendado usar Kriging cuando los datos están normalmente distribuidos, se tiene una buena cantidad de observaciones (depende pero 30, 40 o más es lo recomendado), son estacionarios (la media y varianza de la variable no varían significativamente, esto puede subsanarse con diferentes variantes), y hay una dependencia espacial de la variable (variograma muestra un incremento de la semivarianza con la distancia)** [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. 
+Kriging es un método general con diferentes variantes dependiendo de la información que se tenga, el tipo de variable, y la cantidad y tipos de variables a considerar. A manera más general también puede incorporar información temporal, por lo que se puede determinar y modelar la variación espacio-temporal de la variable o variables. **Es más recomendado usar Kriging cuando los datos están normalmente distribuidos, se tiene una buena cantidad de observaciones (depende pero 30, 40 o más es lo recomendado), son estacionarios (la media y varianza de la variable no varían significativamente, esto puede subsanarse con diferentes variantes), y hay una dependencia espacial de la variable (variograma muestra un incremento de la semivarianza con la distancia)** [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. 
 
 Los tipos de Kriging más comunes son [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]:
 
@@ -308,11 +308,9 @@ Los tipos de Kriging más comunes son [@chiles1999; @goovaerts1997; @isaaks1989;
 
 # Análisis geoestadístico {#geostats-analisis}
 
-Una vez presentada la teoría básica de la geoestadística se va a proceder a realizar un análisis geoestadístico típico (con el objetivo de estimar la variable en el espacio) en un set de datos simulados. Se usan datos simulados para que el enfoque sea más en el proceso y no tanto en la variable en si, la cual puede ser porosidad, densidad, espesor, etc., o cualquier variable numérica de interés. 
+Una vez presentada la teoría básica de la geoestadística se va a proceder a realizar un análisis geoestadístico típico (con el objetivo de estimar la variable en el espacio). Los datos corresponden con la temperatura promedio de los últimos 10 años para el 8 de Marzo para la provincia de San José. Los datos fueron tomados de @meteomatics2021, de donde se pueden obtener diferentes parámetros meteorológicos/climáticos a nivel mundial.
 
 Se va a hacer uso de **R** que permite manipular y analizar datos (espaciales y no espaciales), y además tiene diversos paquetes (librerías) para realizar análisis geoestadísticos [@finley2015jss; @jing2015jss; @ribeiro2003p3iwdsc; @R-gstat; @gstat2004; @gstat2016]. El código usado, así como su explicación, se pueden encontrar en el material extra disponible en el repositorio de GitHub del trabajo: https://github.com/maxgav13/intro_geostats.
-
-<!-- Aquí se presenta el uso del paquete **gstat** [@R-gstat], que es uno de los más usados, ya presenta una gran cantidad de funciones disponibles. Para la manipulación de los datos se usan principalmente **dplyr** [@R-dplyr], **tidyr** [@R-tidyr] y **broom** [@R-broom], para la creación de gráficos se usa **ggplot2** [@R-ggplot2; @ggplot22016], y para la creación y trato de objetos espaciales se usan **sf** [@R-sf], **sp** [@R-sp], y **stars** [@R-stars]. -->
 
 
 
@@ -320,43 +318,56 @@ Se va a hacer uso de **R** que permite manipular y analizar datos (espaciales y 
 
 Antes de iniciar con el análisis geoestadístico es necesario estudiar la variable, ver su distribución (si se aproxima a una distribución normal) para determinar si es necesaria alguna transformación, y por medio de la varianza se puede tener una idea aproximada de la meseta total del variograma.
 
-<!-- Primeramente se deben importar los datos en un data frame (tabla) al cual se le va a llamar `datos`. En este caso la variable de interés es `z`. Una vez los datos están listos se procede a analizar la variable y ver su distribución como se muestra a continuación. -->
-
 (ref:AED) Histograma de la variable. La línea roja corresponde con la media, y la curva azul con la curva de densidad empírica.
 
-
-Table: (\#tab:AED)Resumen estadístico de la variable.
-
-      N     Media    Desv. Est.     Min      Q1     Mediana     Q3       Max     MAD     IQR      CV     Asimetría 
----  ----  -------  ------------  -------  ------  ---------  -------  -------  ------  ------  ------  -----------
-z     60    29.9        0.86       28.19    29.2     29.86     30.38    31.95    0.94    1.15    0.03      0.47    
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>(\#tab:AED)Resumen estadístico de los datos.</caption>
+ <thead>
+  <tr>
+   <th style="text-align:left;">   </th>
+   <th style="text-align:center;"> N </th>
+   <th style="text-align:center;"> Media </th>
+   <th style="text-align:center;"> Desv. Est. </th>
+   <th style="text-align:center;"> Min </th>
+   <th style="text-align:center;"> Mediana </th>
+   <th style="text-align:center;"> Max </th>
+   <th style="text-align:center;"> MAD </th>
+   <th style="text-align:center;"> CV </th>
+   <th style="text-align:center;"> Asimetría </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> TempC </td>
+   <td style="text-align:center;"> 178 </td>
+   <td style="text-align:center;"> 16,96 </td>
+   <td style="text-align:center;"> 4,39 </td>
+   <td style="text-align:center;"> 2,9 </td>
+   <td style="text-align:center;"> 14,1 </td>
+   <td style="text-align:center;"> 20,1 </td>
+   <td style="text-align:center;"> 4,23 </td>
+   <td style="text-align:center;"> 5,95 </td>
+   <td style="text-align:center;"> -0,73 </td>
+  </tr>
+</tbody>
+</table>
 
 <div class="figure" style="text-align: center">
 <img src="figures/AED-1.png" alt="(ref:AED)" width="90%" />
 <p class="caption">(\#fig:AED)(ref:AED)</p>
 </div>
 
-El resumen estadístico (Cuadro \@ref(tab:AED)) y el histograma (Figura \@ref(fig:AED)) de la variable muestran que tiene una distribución aproximadamente normal, donde la media y mediana son similares y el histograma presenta una forma general de campana, por lo que no es necesaria ninguna transformación. La varianza de la variable es 0.745, lo que brinda una aproximación de la meseta total del variograma.
+El resumen estadístico (Cuadro \@ref(tab:AED)) y el histograma (Figura \@ref(fig:AED)) de la variable muestran que tiene una distribución aproximadamente normal, donde la media y mediana son similares y el histograma presenta una forma general de campana con una asimetría inferior a 1, por lo que no es necesaria ninguna transformación. La varianza de la variable es 19,258, lo que brinda una aproximación de la meseta total del variograma.
 
-<!-- Como los datos iniciales están en una tabla, es necesario convertir estos datos en datos/objetos espaciales, para poder realizar operaciones y análisis espaciales, incluyendo el análisis geoestadístico.  -->
-
-<!-- Aquí el objeto espacial se denomina como `datos_sf` y `datos_sp`, para referencia del lector. -->
-
-En este caso los datos tienen unas coordenadas locales, las cual no corresponden con ningún sistema de coordenadas reconocido, es arbritario. De manera general se recomienda trabajar los datos en sistemas de coordenadas planas (x,y) por lo que si se tienen en geográficas (long, lat) se recomienda convertirlas a planas conforme la zona de estudio, utilizando los códigos *epsg* respectivos. Para esto se puede consultar @garnier-villarreal2020, donde el capítulo 6 está dedicado al trato de datos espaciales en **R**, y se indica como transformar los datos de un sistema de coordenadas a otro.
+En este caso los datos tienen coordenadas geográficas pero de manera general se recomienda trabajar los datos en sistemas de coordenadas planas (x,y) por lo que se se recomienda convertirlas a planas conforme la zona de estudio, utilizando los códigos *epsg* respectivos. En este caso el código que corresponde es el *5367* para el sistema de coordendadas *CRTM05*. Para más información al respecto se puede consultar @garnier-villarreal2020, donde el capítulo 6 está dedicado al trato de datos espaciales en **R**.
 
 
 
 
 
-<!-- Una vez transformados los datos a datos espaciales  -->
-
-Es buena práctica determinar las distancias entre los puntos, ya que como se explicó en la parte teórica, no es recomendado calcular el variograma experimental a más de la mitad de la distancia máxima entre puntos. Haciendo este paso se obtiene que la distancia máxima es de 128.03 m.
+Es buena práctica determinar las distancias entre los puntos, ya que como se explicó en la parte teórica, no es recomendado calcular el variograma experimental a más de la mitad de la distancia máxima entre puntos. Haciendo este paso se obtiene que la distancia máxima es de 142,00 km. Dada la zona de estudio tan grande se van a presenta las distancias en kilómetros para mayor facilidad y legibilidad, pero hay que tener en cuenta que los datos se encuentran en metros.
 
 
-
-<!-- Como se desea tener una superficie con datos interpolados (en puntos donde no se tiene muestra) es necesario generar una grilla a rellenar. Se pueden tener grillar regulares (rectangulares) o irregulares (conforme un polígono que encierra a los datos).  -->
-
-<!-- Para este caso se genera una grilla regular (objeto `datosint`) y una irregular (objeto `datosint2`). -->
 
 
 
@@ -375,11 +386,7 @@ Habiendo estudiado la variable y hecho los pasos iniciales de manipulación, an�
 
 ### Variograma experimental
 
-El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Se va a hacer uso del paquete **gstat** [@R-gstat; @gstat2004; @gstat2016] para la geoestadística. En la construcción del variograma expermiental se deben definir los argumentos de el intervalo de distancia deseado ($h$), y la distancia máxima a la cual calcular la semivarianza. Si recordamos la distancia máxima era 128.03, por lo que se escoge un valor ligeramente inferior a la mitad. Es en este paso donde el usuario puede probar diferentes valores para obtener un variograma representativo.
-
-<!-- donde es conveniente crear un objeto `gstat` en el cual se definen los datos a usar y la variable de interés. Para definir la variable de interés se usa la sintaxis de fórmula de la siguiente forma: `variable ~ 1`, que sería similar a definir un modelo lineal para sólo el intercepto (`y ~ 1`). En este caso, y para facilidad, se guardó el nombre de la variable ('z') en el objeto `myvar`. -->
-
-<!-- Una vez definido este objeto, que se va a usar en varias instancias, se construye el variograma experimental con la función `variogram`. Esta función tiene como argumentos el objeto `gstat`, el intervalo de distancia deseado (`width`) y la distancia máxima a la cual calcular la semivarianza (`cutoff`); y si recordamos la distancia máxima era 128.03, por lo que se escoge un valor ligeramente inferior a la mitad. Es en este paso donde el usuario puede probar diferentes valores para obtenes un variograma representativo. -->
+El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Se va a hacer uso del paquete **gstat** [@R-gstat; @gstat2004; @gstat2016] para la geoestadística. En la construcción del variograma expermiental se deben definir los argumentos de el intervalo de distancia deseado ($h$), y la distancia máxima a la cual calcular la semivarianza. Si recordamos la distancia máxima era 142,00 km, por lo que se escoge un valor ligeramente inferior a la mitad (70 km) para la distancia máxima y un valor de 4 km para el intervalo de distancias $h$. Es en este paso donde el usuario puede probar diferentes valores para obtener un variograma representativo, que muestre una estructura de dependencia espacial y que los puntos del variograma se hayan calculado con suficientes datos (recomendable 20 o más).
 
 
 
@@ -392,11 +399,9 @@ El primer paso es crear un variograma experimental omnidireccional (Figura \@ref
 
 Una vez analizado el variograma omnidireccional se procede a determinar si existe la presencia o no de anisotropía. Para esto se usan tanto el mapa de la superficie de variograma (Figura \@ref(fig:variog-map)), como los variogramas direccionales (Figura \@ref(fig:variog-dir)).
 
-<!-- Para el mapa de la superficie de variograma los argumentos necesarios son la extensión (`cutoff`, misma que le variograma experimental), el ancho del pixel (`width`, no es el mismo que para el variograma, por lo general mayor), y definir que es un mapa (`map=TRUE`). -->
 
 
-
-(ref:variog-map) Mapa de la superficie de variograma. No se observa un patrón o tendencia o dirección preferencial.
+(ref:variog-map) Mapa de la superficie de variograma. Se observa una dirección preferencial a aproximadamente 135°.
 
 <div class="figure" style="text-align: center">
 <img src="figures/variog-map-1.png" alt="(ref:variog-map)" width="90%" />
@@ -409,44 +414,42 @@ Para los variogramas direccionales hay que definir, adicionalmente, los argument
 
 
 
-(ref:variog-dir) Variogramas experimentales direccionales cada 45°. La línea roja punteada representa la varianza de la variable, lo que se aproxima a la meseta total.
+(ref:variog-dir) Variogramas experimentales direccionales cada 45°. La línea roja punteada representa la varianza de la variable, lo que se aproxima a la meseta total. Se observa un mayor rango en la dirección 135° y un menor rango en la dirección 45°.
 
 <div class="figure" style="text-align: center">
-<img src="figures/variog-dir-1.png" alt="(ref:variog-dir)" width="90%" />
+<img src="figures/variog-dir-1.png" alt="(ref:variog-dir)" width="100%" />
 <p class="caption">(\#fig:variog-dir)(ref:variog-dir)</p>
 </div>
 
-Analizando el mapa y los variogramas direccionales se concluye que no muestran señas de anisotropía, no hay una dirección preferencial que presente una continuidad importante, por lo que el modelado se puede continuar con el variograma omnidireccional.
+Analizando el mapa y los variogramas direccionales se concluye que hay una anisotropía con dirección principal de 135° y un rango aproximado de 50 km, y un rango aproximado de 25 km en la dirección de 45°, resultando en una razón de anisotropía de 0,5. Por lo anterior el modelado se realizará con los variogramas direccionales.
 
 ### Ajuste de modelo de variograma
 
-Una vez creado el variograma experimental es necesario ajustarle un modelo para poder obtener valores a distancias no muestreadas. Antes de ajustar un modelo al variograma experimental es necesario estimar las partes del mismo (meseta, pepita, rango) y determinar valores iniciales, para posteriormente realizar el ajuste.
+Una vez creado el variograma experimental es necesario ajustarle un modelo para poder obtener valores a distancias no muestreadas. Antes de ajustar un modelo al variograma experimental es necesario estimar las partes del mismo (meseta, pepita, rango, anisotropía) y determinar valores iniciales, para posteriormente realizar el ajuste.
 
-Usando el variograma omnidireccional (Figura \@ref(fig:variog-omni)), se puede estimar una pepita de aproximadamente 0,25, una meseta parcial de 0,5, un rango de 30, y se puede usar un modelo tipo esférico ('Sph'). 
-
-<!-- Lo anterior se define de la siguiente manera: -->
-
-
-
-<!-- Una vez definidos los valores iniciales se usa la función `fit.variogram` para realizar el ajuste automático. Los argumentos de la función son el variograma experimental y el modelo que se define por medio de la función `vgm`, usando los valores iniciales definidos anteriormente. -->
-
-
-
-El modelo ajustado (Cuadro \@ref(tab:ajuste-tab)) se puede usar para calcular un error del ajuste inicial ($RMSE_{ajuste}=0.013$), pero es más confiable el que se obtiene usando la validación cruzada, ya que el obtenido acá es un valor optimista. Lo anterior se da puesto que se calcula con respecto a los datos que se utilizaron para el ajuste (toda la información disponible) y esto simpre va a resultar en error menor que cuando se usa el modelo en datos no observados [@hastie2008; @james2013; @kuhn2013; @witten2011], que es el objetivo de la interpolación.
+Usando los variogramas direccionales (Figura \@ref(fig:variog-dir)), se puede estimar una pepita de aproximadamente 0, una meseta parcial de 25, un rango de 50000, una anisotropía a 135° con una razón de 0,5, y se puede usar un modelo tipo esférico ('Sph'). 
 
 
 
 
-Table: (\#tab:ajuste-tab)Modelo ajustado al variograma experimental
 
- Modelo    Meseta    Rango  
---------  --------  --------
-  Nug      0.336     0.000  
-  Sph      0.533     44.838 
+El modelo ajustado (Cuadro \@ref(tab:ajuste-tab)) se puede usar para calcular un error del ajuste inicial ($RMSE_{ajuste}=4e-04$), pero es más confiable el que se obtiene usando la validación cruzada, ya que el obtenido acá es un valor optimista. Lo anterior se da puesto que se calcula con respecto a los datos que se utilizaron para el ajuste (toda la información disponible) y esto simpre va a resultar en error menor que cuando se usa el modelo en datos no observados [@hastie2008; @james2013; @kuhn2013; @witten2011], que es el objetivo de la interpolación.
 
-El modelo ajustado de la Cuadro \@ref(tab:ajuste-tab) se puede interpretar así: el efecto pepita ('Nug') (que como es el intercepto solo aporta información a la semivarianza y no al rango) aporta 0.336 a la semivarianza ($C_0=0.336$); el modelo esférico ('Sph') aporta 0.533 a la semivarianza ($C_1=0.533$), con lo que la meseta tota es $S=C_0+C_1=0.870$, y el rango del modelo esférico es $a=44.84$.
 
-Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)). En general, para todos los casos se observa que el modelo ajustado se válido y representativo para todos los casos.
+
+
+Table: (\#tab:ajuste-tab)Modelo ajustado
+
+ Modelo    Meseta     Rango      Razón    Dirección Principal 
+--------  --------  ----------  -------  ---------------------
+  Nug       0,00       0,00       0,0              0          
+  Sph      23,99     84672,58     0,5             135         
+
+El modelo ajustado de la Cuadro \@ref(tab:ajuste-tab) se puede interpretar así: el efecto pepita ('Nug') (que como es el intercepto solo aporta información a la semivarianza y no al rango) aporta 0,000 a la semivarianza ($C_0=0,000$); el modelo esférico ('Sph') aporta 23,990 a la semivarianza ($C_1=23,990$), con lo que la meseta tota es $S=C_0+C_1=23,990$, y el rango mayor del modelo esférico es $a=84672,58$ en una dirección 135°, con una razón de anisotropía de 0,5.
+
+Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)). En general, para todos los casos se observa que el modelo ajustado es válido y representativo para todos los casos.
+
+
 
 
 
@@ -457,10 +460,10 @@ Con el modelo ajustado se puede visualizar éste sobre el variograma omnidirecci
 <p class="caption">(\#fig:ajuste-1)(ref:ajuste-1)</p>
 </div>
 
-(ref:ajuste-2) Variogramas experimentales direccionales con el modelo esférico ajustado sobrepuesto, mostrando que el modelo es válido para todas las direcciones.
+(ref:ajuste-2) Variogramas experimentales direccionales con el modelo esférico ajustado sobrepuesto, mostrando que el modelo es válido.
 
 <div class="figure" style="text-align: center">
-<img src="figures/ajuste-2-1.png" alt="(ref:ajuste-2)" width="90%" />
+<img src="figures/ajuste-2-1.png" alt="(ref:ajuste-2)" width="100%" />
 <p class="caption">(\#fig:ajuste-2)(ref:ajuste-2)</p>
 </div>
 
@@ -469,8 +472,6 @@ Con el modelo ajustado se puede visualizar éste sobre el variograma omnidirecci
 Para evaluar de manera más realista el ajuste de cualquier modelo es mejor usar la validación cruzada. Es en este paso que se podrían probar diferentes modelos, donde se obtienen las métricas de ajuste de un modelo, se ajusta un nuevo modelo y se obtienen sus métricas de ajuste, y así iterativamente. Una vez ajustados diferentes modelos y con sus diferentes métricas, se puede tener un criterio más robusto de cuál modelo se ajusta mejor a los datos. 
 
 Las métricas usadas aquí son las que se introdujeron anteriormente: el error cuadrático medio ($RMSE$), la razón de desviación cuadrática media ($MSDR$), el error porcentual absoluto medio ($MAPE$), y el estadístico de bondad de predicción ($G$). Adicionalmente se estima la correlación ($r$) entre los valores observados y predichos, donde lo que se busca es determinar qué tan similares son los valores entre si (Figura \@ref(fig:xval-plots) **A**).
-
-<!-- Para realizar la validación cruzada se usa la función `krige.cv`, con los argumentos de la fórmula, datos espaciales, y el modelo ajustado, usando el método *LOO* por defecto. El objeto resultante va a contener los valores predichos (`var1.pred`), la varianza de las predicciones (`var1.var`), los valores observados (`observed`), y los residuales (`residual`). -->
 
 
 
@@ -481,16 +482,16 @@ Table: (\#tab:xval-metrics-tab)Métricas de ajuste para la validación cruzada
 
  Métrica    Valor 
 ---------  -------
- $RMSE$     0.747 
- $MSDR$     0.929 
-   $r$      .492  
-  $R^2$     .242  
- $MAPE$     .019  
-   $G$      .238  
+ $RMSE$     1,475 
+ $MSDR$     0,758 
+   $r$      .942  
+  $R^2$     .887  
+ $MAPE$     .085  
+   $G$      .886  
 
-Como se mencionó arriba las métricas son más útiles cuando se comparan modelos, pero para este caso, usando solo el modelo esférico, se puede decir que presentan valores aceptables (Cuadro \@ref(tab:xval-metrics-tab)): la $MSDR$ está muy cerca de 1, la correlación ($r$) es moderada-alta, el $RMSE$ es menor a la desviación estándar de los datos (0.863), el $MAPE$ es bajo y cercano a 0, y el estadístico $G$ es positivo. Conforme APA -@americanpsychologicalassociation2010, valores que no pueden por definición ser superiores a 1 o inferiores a -1 ($r$, $R^2$, $MAPE$, y $G$) se reportan sin el '0' inicial.
+Como se mencionó arriba las métricas son más útiles cuando se comparan modelos, pero para este caso, usando solo el modelo esférico, se puede decir que presentan valores aceptables (Cuadro \@ref(tab:xval-metrics-tab)): la $MSDR$ está cerca de 1, la correlación ($r$) es alta, el $RMSE$ es menor a la desviación estándar de los datos (4,388), el $MAPE$ es bajo y cercano a 0, y el estadístico $G$ es positivo y cercano a 1. Conforme APA -@americanpsychologicalassociation2010, valores que no pueden por definición ser superiores a 1 o inferiores a -1 ($r$, $R^2$, $MAPE$, y $G$) se reportan sin el '0' inicial.
 
-Si recordamos el error del ajuste inicial sobre los datos que se realizó el ajuste fue $RMSE_{ajuste}=0.013$, que como se puede observar es mucho menor al error de la validación cruzada $RMSE_{xval}=0.747$, de ahí que se le definiera como optimista, y sea el error de la validación cruzada un mejor indicador de la capacidad predictiva del modelo seleccionado.
+Si recordamos el error del ajuste inicial sobre los datos que se realizó el ajuste fue $RMSE_{ajuste}=4e-04$, que como se puede observar es mucho menor al error de la validación cruzada $RMSE_{xval}=1,475$, de ahí que se le definiera como optimista, y sea el error de la validación cruzada un mejor indicador de la capacidad predictiva del modelo seleccionado.
 
 
 
@@ -503,7 +504,7 @@ Si recordamos el error del ajuste inicial sobre los datos que se realizó el aju
 <p class="caption">(\#fig:xval-plots)(ref:xval-plots)</p>
 </div>
 
-Adicionalmente se pueden explorar los residuales ya que idealmente se esperaría que presenten una distribución normal. Lo anterior se puede apreciar en la Figura \@ref(fig:xval-plots) **B**, donde el histograma, aunque no es perfectamente normal, no presenta una asimetría importante (menor a 1: 0.827) y se encuentra moderadamente centrado alrededor de 0.
+Adicionalmente se pueden explorar los residuales ya que idealmente se esperaría que presenten una distribución normal. Lo anterior se puede apreciar en la Figura \@ref(fig:xval-plots) **B**, donde el histograma es aproximadamente normal, y no presenta una asimetría importante (menor a 1: -0,304) y se encuentra centrado alrededor de 0.
 
 Las métricas tanto como los residuales indican que el modelo ajustado es un modelo apropiado para proceder con la interpolación.
 
@@ -511,20 +512,15 @@ Las métricas tanto como los residuales indican que el modelo ajustado es un mod
 
 Para recalcar nuevamente, el análisis geoestadístico es un proceso que conlleva el calculo del variograma, el ajuste de un modelo, la validación del modelo a usar, y por último la interpolación mediante Kriging. Si no se realizan con cuidado los pasos el resultado de la interpolación puede no tener validez o sentido.
 
-<!-- La interpolación por Kriging es se realiza por medio de la función `krige`, la cual tiene como argumentos la fórmula, los datos espaciales, la grilla a interpolar, y el modelo ajustado seleccionado. El resultado va a contener dos atributos o columnas: los valores predichos (estimados) en `var1.pred` y la varianza (error) de la predicción (estimación) en `var1.var`. -->
 
 
-```
-## [using ordinary kriging]
-```
-
-Los mapas finales tanto de la predicción (estimación) como de la varianza (error de estimación) se presentan en la Figura \@ref(fig:mapas-kriging). En el mapa de la predicción se observa una concentración de valores bajos en el sector derecho, y dos zonas de concentración de valores altos en el medio del área; estas áreas podría ser de interés para análisis posteriores más detallados, dependiendo de la naturaleza de la variable y el estudio. El mapa de la varianza va a presentar los valores más bajos en los puntos de muestreo y valores mayores en puntos más distantes de los muestreados (típico de Kriging).
+Los mapas finales tanto de la predicción (estimación) como de la varianza (error de estimación) se presentan en la Figura \@ref(fig:mapas-kriging). En el mapa de la predicción se observa una tendencia de valores altos hacia al SW del área y de valores bajos hacia el NE. El mapa de la varianza va a presentar los valores más bajos en los puntos de muestreo y valores mayores en puntos más distantes de los muestreados, que es un comportamiento típico de Kriging.
 
 
 
 
 
-(ref:mapas-kriging) Mapas de predicción (**A**) y de la varianza/error (**B**) de la variable de interés.
+(ref:mapas-kriging) Mapas de predicción (**A**) y de la varianza/error (**B**) de la temperatura para la provincia de San José, para la fecha del 8 de Marzo.
 
 <div class="figure" style="text-align: center">
 <img src="figures/mapas-kriging-1.png" alt="(ref:mapas-kriging)" width="100%" />

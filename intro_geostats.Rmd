@@ -87,16 +87,18 @@ knitr::opts_chunk$set(
   out.width = "90%"
 )
 
-theme_set(theme_bw(base_size = 10))
+options(OutDec = ',')
+
+theme_set(theme_bw(base_size = 12))
 # conflict_prefer('select','dplyr')
 # conflict_prefer('filter','dplyr')
 
-x_var = 'Distancia [m]'
+x_var = 'Distancia [km]'
 y_var = 'Semivarianza'
-x_map = 'X [m]'
-y_map = 'Y [m]'
-x_vmap = "Distancia E-W [m]"
-y_vmap = "Distancia N-S [m]"
+x_map = 'X [km]'
+y_map = 'Y [km]'
+x_vmap = "Distancia E-W [km]"
+y_vmap = "Distancia N-S [km]"
 ```
 
 # Introducción {#geostats-intro}
@@ -115,7 +117,7 @@ Para el procesamiento de los datos y la implementación de la geoestadística se
 
 De manera resumida y sin entrar en mucho detalle se mencionan diferentes métodos de interpolación comúnmente usados, para ellos se puede consultar @webster2007. De manera general se tienen: Polígonos de Thiessen, Triangulación, Vecinos naturales (natural neighbours), Inverso de la distancia (inverse distance), Superficies de tendencia (trend surface), Ajuste polinomial (splines), y **Kriging**.
 
-El método de Kriging es lo que más se asocia con la geoestadística, y va a ser el énfasis de lo aquí presentado. El Kriging es considerado como el método más robusto y preciso, de ahí que en inglés es conocido como **blue** que quiere decir **b**est **l**inear **u**nbiased **e**stimator, y se puede traducir como **mejor estimador lineal no sesgado** [@isaaks1989; @webster2007].
+El método de Kriging es lo que más se asocia con la geoestadística, y va a ser el énfasis de lo aquí presentado. El Kriging es considerado como el método más robusto y preciso, de ahí que en inglés es conocido como **blue** que quiere decir **b**est **l**inear **u**nbiased **e**stimator, y se puede traducir como **mejor estimador lineal insesgado** [@isaaks1989; @webster2007].
 
 Una ventaja de Kriging con respecto a otros métodos de interpolación más populares, es que a parte de estimar el valor de la variable de interés, estima además un error de la interpolación, lo que permite tener una idea de la calidad (incertidumbre) de los resultados [@isaaks1989; @webster2007]. El método ha sido utilizado para predecir la intensidad sísmica [@linkimer2008rgac], el nivel de agua subterránea [@varouchakis2012hsj], pérdida de suelo [@wang2003pers], y temperatura del aire [@wang2017rs], entre otras.
 
@@ -358,7 +360,7 @@ Los tipos de Kriging más comunes son [@chiles1999; @goovaerts1997; @isaaks1989;
 
 # Análisis geoestadístico {#geostats-analisis}
 
-Una vez presentada la teoría básica de la geoestadística se va a proceder a realizar un análisis geoestadístico típico (con el objetivo de estimar la variable en el espacio) en un set de datos simulados. Se usan datos simulados para que el enfoque sea más en el proceso y no tanto en la variable en si, la cual puede ser porosidad, densidad, espesor, etc., o cualquier variable numérica de interés. 
+Una vez presentada la teoría básica de la geoestadística se va a proceder a realizar un análisis geoestadístico típico (con el objetivo de estimar la variable en el espacio). Los datos corresponden con la temperatura promedio de los últimos 10 años para el 8 de Marzo para la provincia de San José. Los datos fueron tomados de @meteomatics2021, de donde se pueden obtener diferentes parámetros meteorológicos/climáticos a nivel mundial.
 
 Se va a hacer uso de **R** que permite manipular y analizar datos (espaciales y no espaciales), y además tiene diversos paquetes (librerías) para realizar análisis geoestadísticos [@finley2015jss; @jing2015jss; @ribeiro2003p3iwdsc; @R-gstat; @gstat2004; @gstat2016]. El código usado, así como su explicación, se pueden encontrar en el material extra disponible en el repositorio de GitHub del trabajo: https://github.com/maxgav13/intro_geostats.
 
@@ -391,14 +393,13 @@ export(datos, here('data','datos.csv')) # exports point data
 
 Antes de iniciar con el análisis geoestadístico es necesario estudiar la variable, ver su distribución (si se aproxima a una distribución normal) para determinar si es necesaria alguna transformación, y por medio de la varianza se puede tener una idea aproximada de la meseta total del variograma.
 
-<!-- Primeramente se deben importar los datos en un data frame (tabla) al cual se le va a llamar `datos`. En este caso la variable de interés es `z`. Una vez los datos están listos se procede a analizar la variable y ver su distribución como se muestra a continuación. -->
-
 (ref:AED) Histograma de la variable. La línea roja corresponde con la media, y la curva azul con la curva de densidad empírica.
 
 ```{r AED, echo=FALSE, fig.cap='(ref:AED)'}
-datos = import(here('data','datos.csv'))
+datos = import(here('data','clima_SJ_tidy.csv'))
 
-myvar = 'z' # variable a modelar
+myvar = 'TempC' # variable a modelar
+myvar.lab = 'Temperatura [°C]'
 
 # descr(datos[myvar],style = 'rmarkdown') %>% 
 #   as.data.frame() %>% 
@@ -411,36 +412,34 @@ myvar = 'z' # variable a modelar
 #         caption = 'Resumen estadístico de la variable "z".')
 
 descr(datos[myvar],style = 'rmarkdown',transpose = T) %>% 
-  select(-c(12,13,15)) %>% 
+  select(-c(5,7,10,12,13,15)) %>% 
   relocate(N.Valid) %>% 
-  kable(col.names = c('N','Media','Desv. Est.','Min','Q1','Mediana',
-                      'Q3','Max','MAD','IQR','CV','Asimetría'),
+  kable(col.names = c('N','Media','Desv. Est.','Min','Mediana',
+                      'Max','MAD','CV','Asimetría'),
         digits = 2,
-        format = 'simple',
+        # format = 'simple',
         align = 'c',
-        caption = 'Resumen estadístico de la variable.')
+        caption = 'Resumen estadístico de los datos.') %>% 
+  kable_styling(full_width = F)
 
 S = var(datos[[myvar]]) # varianza de la variable
 
 gg.hist = ggplot(datos, aes_string(myvar)) + 
   geom_histogram(aes(y = stat(density)), bins = 10, 
                  col = 'black', fill = 'orange') + 
-  geom_vline(xintercept = mean(datos[[myvar]]), col = 'red', size=1.25) +
-  geom_density(col = 'blue', size=1.25) +
-  labs(y = 'Densidad')
+  geom_vline(xintercept = mean(datos[[myvar]]), col = 'red', size=.75) +
+  geom_density(col = 'blue', size=.75) +
+  labs(x = myvar.lab, y = 'Densidad')
 gg.hist
 ```
 
-El resumen estadístico (Cuadro \@ref(tab:AED)) y el histograma (Figura \@ref(fig:AED)) de la variable muestran que tiene una distribución aproximadamente normal, donde la media y mediana son similares y el histograma presenta una forma general de campana, por lo que no es necesaria ninguna transformación. La varianza de la variable es `r apa(S,3)`, lo que brinda una aproximación de la meseta total del variograma.
+El resumen estadístico (Cuadro \@ref(tab:AED)) y el histograma (Figura \@ref(fig:AED)) de la variable muestran que tiene una distribución aproximadamente normal, donde la media y mediana son similares y el histograma presenta una forma general de campana con una asimetría inferior a 1, por lo que no es necesaria ninguna transformación. La varianza de la variable es `r apa(S,3)`, lo que brinda una aproximación de la meseta total del variograma.
 
-<!-- Como los datos iniciales están en una tabla, es necesario convertir estos datos en datos/objetos espaciales, para poder realizar operaciones y análisis espaciales, incluyendo el análisis geoestadístico.  -->
-
-<!-- Aquí el objeto espacial se denomina como `datos_sf` y `datos_sp`, para referencia del lector. -->
-
-En este caso los datos tienen unas coordenadas locales, las cual no corresponden con ningún sistema de coordenadas reconocido, es arbritario. De manera general se recomienda trabajar los datos en sistemas de coordenadas planas (x,y) por lo que si se tienen en geográficas (long, lat) se recomienda convertirlas a planas conforme la zona de estudio, utilizando los códigos *epsg* respectivos. Para esto se puede consultar @garnier-villarreal2020, donde el capítulo 6 está dedicado al trato de datos espaciales en **R**, y se indica como transformar los datos de un sistema de coordenadas a otro.
+En este caso los datos tienen coordenadas geográficas pero de manera general se recomienda trabajar los datos en sistemas de coordenadas planas (x,y) por lo que se se recomienda convertirlas a planas conforme la zona de estudio, utilizando los códigos *epsg* respectivos. En este caso el código que corresponde es el *5367* para el sistema de coordendadas *CRTM05*. Para más información al respecto se puede consultar @garnier-villarreal2020, donde el capítulo 6 está dedicado al trato de datos espaciales en **R**.
 
 ```{r datos-sf}
-datos_sf = st_as_sf(datos, coords = 1:2, crs = NA) %>% 
+datos_sf = st_as_sf(datos, coords = c('Long','Lat'), crs = 4326) %>% 
+  st_transform(crs = 5367) %>% 
   mutate(X = st_coordinates(.)[,1], Y = st_coordinates(.)[,2]) %>% 
   relocate(X, Y)
 datos_sp = as(datos_sf, 'Spatial')
@@ -449,22 +448,16 @@ coordnames(datos_sp) = c('X','Y')
 
 ```{r distancias}
 dists = st_distance(datos_sf) %>% .[lower.tri(.)] %>% unclass()
-distancias = signif(c(min(dists), mean(dists), max(dists)),6) # rango de distancias
+distancias = signif(c(min(dists), mean(dists), max(dists)),3)/1000 # rango de distancias
 names(distancias) = c('min', 'media', 'max') 
 # distancias
 ```
 
-<!-- Una vez transformados los datos a datos espaciales  -->
+Es buena práctica determinar las distancias entre los puntos, ya que como se explicó en la parte teórica, no es recomendado calcular el variograma experimental a más de la mitad de la distancia máxima entre puntos. Haciendo este paso se obtiene que la distancia máxima es de `r apa(distancias[3],2)` km. Dada la zona de estudio tan grande se van a presenta las distancias en kilómetros para mayor facilidad y legibilidad, pero hay que tener en cuenta que los datos se encuentran en metros.
 
-Es buena práctica determinar las distancias entre los puntos, ya que como se explicó en la parte teórica, no es recomendado calcular el variograma experimental a más de la mitad de la distancia máxima entre puntos. Haciendo este paso se obtiene que la distancia máxima es de `r apa(distancias[3],2)` m.
-
-```{r outline}
-outline = st_convex_hull(st_union(datos_sf))
+```{r outline, include=FALSE}
+outline = st_read('data/SJ.gpkg',layer = 'SJ_poly')
 ```
-
-<!-- Como se desea tener una superficie con datos interpolados (en puntos donde no se tiene muestra) es necesario generar una grilla a rellenar. Se pueden tener grillar regulares (rectangulares) o irregulares (conforme un polígono que encierra a los datos).  -->
-
-<!-- Para este caso se genera una grilla regular (objeto `datosint`) y una irregular (objeto `datosint2`). -->
 
 ```{r grilla-interp}
 bb = st_bbox(datos_sf)
@@ -489,7 +482,9 @@ gg.map.pts = ggplot() +
   geom_sf(data = outline, col = 'cyan', alpha = .1, size = .75) + 
   geom_sf(data = datos_sf, aes_string(col = myvar), size = 3, alpha = 0.6) + 
   scale_color_viridis_c() + 
-  labs(x = x_map, y = y_map) +
+  scale_x_continuous(labels = scales::label_number(scale = 1/1000)) +
+  scale_y_continuous(labels = scales::label_number(scale = 1/1000)) +
+  labs(x = x_map, y = y_map, col = myvar.lab) +
   if (!is.na(st_crs(datos_sf))) {
     coord_sf(datum = st_crs(datos_sf))
   }
@@ -502,11 +497,7 @@ Habiendo estudiado la variable y hecho los pasos iniciales de manipulación, an�
 
 ### Variograma experimental
 
-El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Se va a hacer uso del paquete **gstat** [@R-gstat; @gstat2004; @gstat2016] para la geoestadística. En la construcción del variograma expermiental se deben definir los argumentos de el intervalo de distancia deseado ($h$), y la distancia máxima a la cual calcular la semivarianza. Si recordamos la distancia máxima era `r apa(max(distancias),2)`, por lo que se escoge un valor ligeramente inferior a la mitad. Es en este paso donde el usuario puede probar diferentes valores para obtener un variograma representativo.
-
-<!-- donde es conveniente crear un objeto `gstat` en el cual se definen los datos a usar y la variable de interés. Para definir la variable de interés se usa la sintaxis de fórmula de la siguiente forma: `variable ~ 1`, que sería similar a definir un modelo lineal para sólo el intercepto (`y ~ 1`). En este caso, y para facilidad, se guardó el nombre de la variable ('z') en el objeto `myvar`. -->
-
-<!-- Una vez definido este objeto, que se va a usar en varias instancias, se construye el variograma experimental con la función `variogram`. Esta función tiene como argumentos el objeto `gstat`, el intervalo de distancia deseado (`width`) y la distancia máxima a la cual calcular la semivarianza (`cutoff`); y si recordamos la distancia máxima era `r apa(max(distancias),2)`, por lo que se escoge un valor ligeramente inferior a la mitad. Es en este paso donde el usuario puede probar diferentes valores para obtenes un variograma representativo. -->
+El primer paso es crear un variograma experimental omnidireccional (Figura \@ref(fig:variog-omni)). Se va a hacer uso del paquete **gstat** [@R-gstat; @gstat2004; @gstat2016] para la geoestadística. En la construcción del variograma expermiental se deben definir los argumentos de el intervalo de distancia deseado ($h$), y la distancia máxima a la cual calcular la semivarianza. Si recordamos la distancia máxima era `r apa(max(distancias),2)` km, por lo que se escoge un valor ligeramente inferior a la mitad (70 km) para la distancia máxima y un valor de 4 km para el intervalo de distancias $h$. Es en este paso donde el usuario puede probar diferentes valores para obtener un variograma representativo, que muestre una estructura de dependencia espacial y que los puntos del variograma se hayan calculado con suficientes datos (recomendable 20 o más).
 
 ```{r eval=TRUE, echo=FALSE}
 myformula = as.formula(paste(myvar,'~1'))
@@ -515,8 +506,8 @@ g = gstat(formula = myformula,
 
 # variograma experimental cada cierta distancia (width), y hasta cierta distancia (cutoff)
 dat.vgm = variogram(g, 
-                    width = 5,
-                    cutoff = 60) 
+                    width = 4000,
+                    cutoff = 70000) 
 ```
 
 (ref:variog-omni) Variograma experimental omnidireccional. Las etiquetas de los puntos muestran con el número de pares de puntos usados para el cálculo de la semivarianza. La línea roja punteada corresponde con la varianza de la variable, que es una aproximación a la meseta total.
@@ -526,24 +517,22 @@ gg.omni.exp = ggplot(dat.vgm,aes(x = dist, y = gamma)) +
   geom_point(size = 2) + 
   labs(x = x_var, y = y_var) +
   geom_hline(yintercept = S, col = 'red', linetype = 2) +
-  ylim(0, max(dat.vgm$gamma)) +
-  xlim(0, max(dat.vgm$dist)) + 
+  scale_x_continuous(labels = scales::label_number(scale = 1/1000),
+                     limits = c(0, max(dat.vgm$dist))) +
   geom_text_repel(aes(label = np), size = 2)
 gg.omni.exp
 ```
 
 Una vez analizado el variograma omnidireccional se procede a determinar si existe la presencia o no de anisotropía. Para esto se usan tanto el mapa de la superficie de variograma (Figura \@ref(fig:variog-map)), como los variogramas direccionales (Figura \@ref(fig:variog-dir)).
 
-<!-- Para el mapa de la superficie de variograma los argumentos necesarios son la extensión (`cutoff`, misma que le variograma experimental), el ancho del pixel (`width`, no es el mismo que para el variograma, por lo general mayor), y definir que es un mapa (`map=TRUE`). -->
-
 ```{r eval=TRUE, echo=FALSE}
 map.vgm <- variogram(g, 
-                     width = 10, 
-                     cutoff = 60, 
+                     width = 8000, 
+                     cutoff = 70000, 
                      map = TRUE)
 ```
 
-(ref:variog-map) Mapa de la superficie de variograma. No se observa un patrón o tendencia o dirección preferencial.
+(ref:variog-map) Mapa de la superficie de variograma. Se observa una dirección preferencial a aproximadamente 135°.
 
 ```{r variog-map, fig.cap='(ref:variog-map)', out.width='90%'}
 gg.map.exp = ggplot(data.frame(map.vgm), aes(x = map.dx, y = map.dy, fill = map.var1)) +
@@ -560,9 +549,10 @@ Para los variogramas direccionales hay que definir, adicionalmente, los argument
 # con direcciones y tolerancia angular
 d = c(0,45,90,135) # direcciones
 dat.vgm2 = variogram(g, 
+                     width = 4000,
+                     cutoff = 70000,
                      alpha = d,
-                     tol.hor = 22.5, 
-                     cutoff = 60) 
+                     tol.hor = 22.5) 
 ```
 
 ```{r}
@@ -570,53 +560,53 @@ dat.vgm2.gg = dat.vgm2 %>%
   mutate(dir.hor = factor(dir.hor, labels = as.character(d)))
 ```
 
-(ref:variog-dir) Variogramas experimentales direccionales cada 45°. La línea roja punteada representa la varianza de la variable, lo que se aproxima a la meseta total.
+(ref:variog-dir) Variogramas experimentales direccionales cada 45°. La línea roja punteada representa la varianza de la variable, lo que se aproxima a la meseta total. Se observa un mayor rango en la dirección 135° y un menor rango en la dirección 45°.
 
-```{r variog-dir, fig.cap='(ref:variog-dir)', out.width='90%'}
+```{r variog-dir, fig.cap='(ref:variog-dir)', out.width='100%', fig.height=6, fig.width=7}
 gg.dir.exp = ggplot(dat.vgm2.gg,aes(x = dist, y = gamma,
                        col = dir.hor, shape = dir.hor)) + 
   geom_point(size = 2) + 
   labs(x = x_var, y = y_var, col = "Dirección", shape = 'Dirección') +
   geom_hline(yintercept = S, col = 'red', linetype = 2) +
   ylim(0, max(dat.vgm2$gamma)) +
-  xlim(0, max(dat.vgm2$dist)) + 
+  scale_x_continuous(labels = scales::label_number(scale = 1/1000), 
+                     limits = c(0, max(dat.vgm2$dist))) +
   scale_color_brewer(palette = 'Dark2') +
+  scale_shape_manual(values = 1:4) + 
   facet_wrap(~dir.hor) + 
   geom_text_repel(aes(label = np), size = 2, show.legend = F) +
   theme(legend.position = 'top')
 gg.dir.exp
 ```
 
-Analizando el mapa y los variogramas direccionales se concluye que no muestran señas de anisotropía, no hay una dirección preferencial que presente una continuidad importante, por lo que el modelado se puede continuar con el variograma omnidireccional.
+Analizando el mapa y los variogramas direccionales se concluye que hay una anisotropía con dirección principal de 135° y un rango aproximado de 50 km, y un rango aproximado de 25 km en la dirección de 45°, resultando en una razón de anisotropía de 0,5. Por lo anterior el modelado se realizará con los variogramas direccionales.
 
 ### Ajuste de modelo de variograma
 
-Una vez creado el variograma experimental es necesario ajustarle un modelo para poder obtener valores a distancias no muestreadas. Antes de ajustar un modelo al variograma experimental es necesario estimar las partes del mismo (meseta, pepita, rango) y determinar valores iniciales, para posteriormente realizar el ajuste.
+Una vez creado el variograma experimental es necesario ajustarle un modelo para poder obtener valores a distancias no muestreadas. Antes de ajustar un modelo al variograma experimental es necesario estimar las partes del mismo (meseta, pepita, rango, anisotropía) y determinar valores iniciales, para posteriormente realizar el ajuste.
 
-Usando el variograma omnidireccional (Figura \@ref(fig:variog-omni)), se puede estimar una pepita de aproximadamente 0,25, una meseta parcial de 0,5, un rango de 30, y se puede usar un modelo tipo esférico ('Sph'). 
-
-<!-- Lo anterior se define de la siguiente manera: -->
+Usando los variogramas direccionales (Figura \@ref(fig:variog-dir)), se puede estimar una pepita de aproximadamente 0, una meseta parcial de 25, un rango de 50000, una anisotropía a 135° con una razón de 0,5, y se puede usar un modelo tipo esférico ('Sph'). 
 
 ```{r params, echo=FALSE}
-pep = .25 # pepita
-meseta = .5 # meseta parcial
+pep = 0 # pepita
+meseta = 25 # meseta parcial
 mod = "Sph" # modelo a ajustar (esférico)
-rango = 30 # rango
+rango = 50000 # rango
+anis = c(135,.5)
 ```
-
-<!-- Una vez definidos los valores iniciales se usa la función `fit.variogram` para realizar el ajuste automático. Los argumentos de la función son el variograma experimental y el modelo que se define por medio de la función `vgm`, usando los valores iniciales definidos anteriormente. -->
 
 ```{r ajuste, eval=TRUE, echo=FALSE}
 dat.fit = fit.variogram(dat.vgm, 
                         model = vgm(psill = meseta, 
                                     model = mod, 
                                     range = rango, 
-                                    nugget = pep))
+                                    nugget = pep,
+                                    anis = anis))
 
 fit.rmse = sqrt(attributes(dat.fit)$SSErr/(nrow(datos))) # error del ajuste
 ```
 
-El modelo ajustado (Cuadro \@ref(tab:ajuste-tab)) se puede usar para calcular un error del ajuste inicial ($RMSE_{ajuste}=`r apa(fit.rmse,3)`$), pero es más confiable el que se obtiene usando la validación cruzada, ya que el obtenido acá es un valor optimista. Lo anterior se da puesto que se calcula con respecto a los datos que se utilizaron para el ajuste (toda la información disponible) y esto simpre va a resultar en error menor que cuando se usa el modelo en datos no observados [@hastie2008; @james2013; @kuhn2013; @witten2011], que es el objetivo de la interpolación.
+El modelo ajustado (Cuadro \@ref(tab:ajuste-tab)) se puede usar para calcular un error del ajuste inicial ($RMSE_{ajuste}=`r apa(fit.rmse,4)`$), pero es más confiable el que se obtiene usando la validación cruzada, ya que el obtenido acá es un valor optimista. Lo anterior se da puesto que se calcula con respecto a los datos que se utilizaron para el ajuste (toda la información disponible) y esto simpre va a resultar en error menor que cuando se usa el modelo en datos no observados [@hastie2008; @james2013; @kuhn2013; @witten2011], que es el objetivo de la interpolación.
 
 ```{r eval=TRUE}
 varmod = dat.fit # modelo ajustado
@@ -624,18 +614,19 @@ varmod = dat.fit # modelo ajustado
 
 ```{r ajuste-tab, echo=FALSE}
 varmod %>% 
-  select(1:3) %>% 
-  kable(col.names = c('Modelo','Meseta','Rango'),
+  select(1:5) %>% 
+  kable(col.names = c('Modelo','Meseta','Rango',
+                      'Razón','Dirección Principal'),
         format = 'simple',
         align = 'c',
         digits = 3,
-        caption = 'Modelo ajustado al variograma experimental') %>% 
+        caption = 'Modelo ajustado') %>% 
   kable_styling(full_width = F)
 ```
 
-El modelo ajustado de la Cuadro \@ref(tab:ajuste-tab) se puede interpretar así: el efecto pepita ('Nug') (que como es el intercepto solo aporta información a la semivarianza y no al rango) aporta `r apa(varmod$psill[1],3)` a la semivarianza ($C_0=`r apa(varmod[1,2],3)`$); el modelo esférico ('Sph') aporta `r apa(varmod$psill[2],3)` a la semivarianza ($C_1=`r apa(varmod[2,2],3)`$), con lo que la meseta tota es $S=C_0+C_1=`r apa(sum(varmod[1:2,2]),3)`$, y el rango del modelo esférico es $a=`r apa(varmod[2,3],2)`$.
+El modelo ajustado de la Cuadro \@ref(tab:ajuste-tab) se puede interpretar así: el efecto pepita ('Nug') (que como es el intercepto solo aporta información a la semivarianza y no al rango) aporta `r apa(varmod$psill[1],3)` a la semivarianza ($C_0=`r apa(varmod[1,2],3)`$); el modelo esférico ('Sph') aporta `r apa(varmod$psill[2],3)` a la semivarianza ($C_1=`r apa(varmod[2,2],3)`$), con lo que la meseta tota es $S=C_0+C_1=`r apa(sum(varmod[1:2,2]),3)`$, y el rango mayor del modelo esférico es $a=`r apa(varmod[2,3],2)`$ en una dirección 135°, con una razón de anisotropía de 0,5.
 
-Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)). En general, para todos los casos se observa que el modelo ajustado se válido y representativo para todos los casos.
+Con el modelo ajustado se puede visualizar éste sobre el variograma omnidireccional (Figura \@ref(fig:ajuste-1)) y los variogramas direccionales  (Figura \@ref(fig:ajuste-2)). En general, para todos los casos se observa que el modelo ajustado es válido y representativo para todos los casos.
 
 ```{r}
 unit_vector = function(th) {
@@ -653,7 +644,9 @@ unit_vector = function(th) {
   }
   return(uv)
 }
+```
 
+```{r}
 variog.dir = map_dfr(d, ~variogramLine(object = varmod, 
                                        maxdist = max(dat.vgm$dist),
                                        min = 0.001, n = 100, 
@@ -671,17 +664,19 @@ variog.dir = map_dfr(d, ~variogramLine(object = varmod,
 # omnidireccional
 
 gg.omni.fit = variog.dir %>% 
+  filter(dir.hor == 0) %>%
   ggplot(aes(dist,gamma)) + 
   geom_point(data = dat.vgm,shape=3,size=2) +
   geom_line(size=1)  +
   labs(x = x_var, y = y_var) +
+  scale_x_continuous(labels = scales::label_number(scale = 1/1000)) +
   coord_cartesian(ylim = c(0,max(dat.vgm$gamma)))
 gg.omni.fit
 ```
 
-(ref:ajuste-2) Variogramas experimentales direccionales con el modelo esférico ajustado sobrepuesto, mostrando que el modelo es válido para todas las direcciones.
+(ref:ajuste-2) Variogramas experimentales direccionales con el modelo esférico ajustado sobrepuesto, mostrando que el modelo es válido.
 
-```{r ajuste-2, fig.cap='(ref:ajuste-2)', out.width='90%'}
+```{r ajuste-2, fig.cap='(ref:ajuste-2)', out.width='100%', fig.height=6, fig.width=7}
 # plot(dat.vgm2, dat.fit, as.table = T, xlab = x_var, ylab = y_var) 
 
 # direccionales
@@ -691,6 +686,7 @@ gg.dir.fit = variog.dir %>%
   geom_point(data = dat.vgm2.gg,shape=3,size=1.5) +
   geom_line(size=1) + 
   scale_color_brewer(palette = 'Dark2') +
+  scale_x_continuous(labels = scales::label_number(scale = 1/1000)) +
   labs(x = x_var, y = y_var, col = 'Dirección') +
   facet_wrap(~dir.hor) +
   theme(legend.position = 'top')
@@ -703,11 +699,10 @@ Para evaluar de manera más realista el ajuste de cualquier modelo es mejor usar
 
 Las métricas usadas aquí son las que se introdujeron anteriormente: el error cuadrático medio ($RMSE$), la razón de desviación cuadrática media ($MSDR$), el error porcentual absoluto medio ($MAPE$), y el estadístico de bondad de predicción ($G$). Adicionalmente se estima la correlación ($r$) entre los valores observados y predichos, donde lo que se busca es determinar qué tan similares son los valores entre si (Figura \@ref(fig:xval-plots) **A**).
 
-<!-- Para realizar la validación cruzada se usa la función `krige.cv`, con los argumentos de la fórmula, datos espaciales, y el modelo ajustado, usando el método *LOO* por defecto. El objeto resultante va a contener los valores predichos (`var1.pred`), la varianza de las predicciones (`var1.var`), los valores observados (`observed`), y los residuales (`residual`). -->
-
-```{r xval, eval=TRUE, message=FALSE, echo=FALSE}
+```{r xval, eval=TRUE, include=FALSE}
 kcv.ok = krige.cv(myformula, 
-                  locations = datos_sf, model = varmod)
+                  locations = datos_sf, 
+                  model = varmod)
 ```
 
 ```{r xval-metrics, include=TRUE}
@@ -752,16 +747,16 @@ metricas %>%
   kable_styling(full_width = F)
 ```
 
-Como se mencionó arriba las métricas son más útiles cuando se comparan modelos, pero para este caso, usando solo el modelo esférico, se puede decir que presentan valores aceptables (Cuadro \@ref(tab:xval-metrics-tab)): la $MSDR$ está muy cerca de 1, la correlación ($r$) es moderada-alta, el $RMSE$ es menor a la desviación estándar de los datos (`r apa(sqrt(S),3,T)`), el $MAPE$ es bajo y cercano a 0, y el estadístico $G$ es positivo. Conforme APA -@americanpsychologicalassociation2010, valores que no pueden por definición ser superiores a 1 o inferiores a -1 ($r$, $R^2$, $MAPE$, y $G$) se reportan sin el '0' inicial.
+Como se mencionó arriba las métricas son más útiles cuando se comparan modelos, pero para este caso, usando solo el modelo esférico, se puede decir que presentan valores aceptables (Cuadro \@ref(tab:xval-metrics-tab)): la $MSDR$ está cerca de 1, la correlación ($r$) es alta, el $RMSE$ es menor a la desviación estándar de los datos (`r apa(sqrt(S),3,T)`), el $MAPE$ es bajo y cercano a 0, y el estadístico $G$ es positivo y cercano a 1. Conforme APA -@americanpsychologicalassociation2010, valores que no pueden por definición ser superiores a 1 o inferiores a -1 ($r$, $R^2$, $MAPE$, y $G$) se reportan sin el '0' inicial.
 
-Si recordamos el error del ajuste inicial sobre los datos que se realizó el ajuste fue $RMSE_{ajuste}=`r apa(fit.rmse,3)`$, que como se puede observar es mucho menor al error de la validación cruzada $RMSE_{xval}=`r apa(xval.rmse,3)`$, de ahí que se le definiera como optimista, y sea el error de la validación cruzada un mejor indicador de la capacidad predictiva del modelo seleccionado.
+Si recordamos el error del ajuste inicial sobre los datos que se realizó el ajuste fue $RMSE_{ajuste}=`r apa(fit.rmse,4)`$, que como se puede observar es mucho menor al error de la validación cruzada $RMSE_{xval}=`r apa(xval.rmse,3)`$, de ahí que se le definiera como optimista, y sea el error de la validación cruzada un mejor indicador de la capacidad predictiva del modelo seleccionado.
 
 ```{r xval-plots1, fig.cap='Relación entre los valores observados y predichos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos.', out.width='80%'}
 gg.xval1 = ggplot(as.data.frame(kcv.ok), aes(var1.pred, observed)) + 
   geom_point(col = "blue", shape = 3, size = 1.25) + 
   coord_fixed() + 
-  geom_abline(slope = 1, col = "red", size = 1.25) + 
-  geom_smooth(se = F, method = 'lm', col = 'green', size = 1.25) +
+  geom_abline(slope = 1, col = "red", size = .75) + 
+  geom_smooth(se = F, method = 'lm', col = 'green', size = .75) +
   labs(x = "Predichos", y = "Observados")
 ```
 
@@ -769,19 +764,20 @@ gg.xval1 = ggplot(as.data.frame(kcv.ok), aes(var1.pred, observed)) +
 gg.xval2 = ggplot(as.data.frame(kcv.ok), aes(residual)) + 
   geom_histogram(aes(y=stat(density)), bins = 8, 
                  col = 'black', fill = "orange") + 
-  geom_density(col = 'blue', size=1.25) + 
+  geom_density(col = 'blue', size=.75) + 
   labs(x = "Residuales", y = "Densidad") + 
-  geom_vline(xintercept = mean(kcv.ok$residual), col = 'red', size=1.25)
+  geom_vline(xintercept = mean(kcv.ok$residual), col = 'red', size=.75)
 ```
 
 (ref:xval-plots) Análisis de los resultados de validación cruzada. **A** Relación entre los valores observados y predichos por la validación cruzada. La línea roja es la línea 1:1 y la línea verde es la regresión entre los datos. **B** Histograma de los residuales de la validación cruzada. La línea roja es la media de los residuales y la curva azul la curva de densidad.
 
 ```{r xval-plots, fig.cap='(ref:xval-plots)', out.width='80%'}
-gg.xval = gg.xval1 + gg.xval2 + plot_annotation(tag_levels = 'A')
+gg.xval = gg.xval1 + gg.xval2 + 
+  plot_annotation(tag_levels = 'A')
 gg.xval
 ```
 
-Adicionalmente se pueden explorar los residuales ya que idealmente se esperaría que presenten una distribución normal. Lo anterior se puede apreciar en la Figura \@ref(fig:xval-plots) **B**, donde el histograma, aunque no es perfectamente normal, no presenta una asimetría importante (menor a 1: `r apa(Skew(kcv.ok$residual),3)`) y se encuentra moderadamente centrado alrededor de 0.
+Adicionalmente se pueden explorar los residuales ya que idealmente se esperaría que presenten una distribución normal. Lo anterior se puede apreciar en la Figura \@ref(fig:xval-plots) **B**, donde el histograma es aproximadamente normal, y no presenta una asimetría importante (menor a 1: `r apa(Skew(kcv.ok$residual),3)`) y se encuentra centrado alrededor de 0.
 
 Las métricas tanto como los residuales indican que el modelo ajustado es un modelo apropiado para proceder con la interpolación.
 
@@ -789,25 +785,26 @@ Las métricas tanto como los residuales indican que el modelo ajustado es un mod
 
 Para recalcar nuevamente, el análisis geoestadístico es un proceso que conlleva el calculo del variograma, el ajuste de un modelo, la validación del modelo a usar, y por último la interpolación mediante Kriging. Si no se realizan con cuidado los pasos el resultado de la interpolación puede no tener validez o sentido.
 
-<!-- La interpolación por Kriging es se realiza por medio de la función `krige`, la cual tiene como argumentos la fórmula, los datos espaciales, la grilla a interpolar, y el modelo ajustado seleccionado. El resultado va a contener dos atributos o columnas: los valores predichos (estimados) en `var1.pred` y la varianza (error) de la predicción (estimación) en `var1.var`. -->
-
-```{r kriging, eval=TRUE, echo=FALSE, message=FALSE}
+```{r kriging, eval=TRUE, include=FALSE}
 ok = krige(myformula, 
            locations = datos_sp,
            newdata = datosint2, 
            model = varmod)
 ```
 
-Los mapas finales tanto de la predicción (estimación) como de la varianza (error de estimación) se presentan en la Figura \@ref(fig:mapas-kriging). En el mapa de la predicción se observa una concentración de valores bajos en el sector derecho, y dos zonas de concentración de valores altos en el medio del área; estas áreas podría ser de interés para análisis posteriores más detallados, dependiendo de la naturaleza de la variable y el estudio. El mapa de la varianza va a presentar los valores más bajos en los puntos de muestreo y valores mayores en puntos más distantes de los muestreados (típico de Kriging).
+Los mapas finales tanto de la predicción (estimación) como de la varianza (error de estimación) se presentan en la Figura \@ref(fig:mapas-kriging). En el mapa de la predicción se observa una tendencia de valores altos hacia al SW del área y de valores bajos hacia el NE. El mapa de la varianza va a presentar los valores más bajos en los puntos de muestreo y valores mayores en puntos más distantes de los muestreados, que es un comportamiento típico de Kriging.
 
 ```{r mapa-pred, warning=FALSE, fig.cap='Mapa de predicción de la variable de interés.', out.width='90%'}
 gg.pred = ggplot() + 
   geom_stars(data = ok, aes(fill = var1.pred, x = x, y = y)) + 
   scale_fill_gradientn(colours = viridis(10), na.value = NA) + 
   coord_sf() + 
+  scale_x_continuous(labels = scales::label_number(scale = 1/1000)) + 
+  scale_y_continuous(labels = scales::label_number(scale = 1/1000)) +
   labs(x = x_map, y = y_map, 
        # title = 'Predicción', 
-       fill = myvar)
+       fill = 'Predicción') +
+  theme(legend.position = 'top')
 ```
 
 ```{r mapa-var, warning=FALSE, fig.cap='Mapa de varianza (error) de la variable de interés.', out.width='90%'}
@@ -815,15 +812,19 @@ gg.var = ggplot() +
   geom_stars(data = ok, aes(fill = var1.var, x = x, y = y)) + 
   scale_fill_gradientn(colours = brewer.pal(9,'RdPu'), na.value = NA) + 
   coord_sf() + 
+  scale_x_continuous(labels = scales::label_number(scale = 1/1000)) + 
+  scale_y_continuous(labels = scales::label_number(scale = 1/1000)) +
   labs(x = x_map, y = y_map, 
        # title = 'Varianza',
-       fill = myvar)
+       fill = 'Varianza') +
+  theme(legend.position = 'top')
 ```
 
-(ref:mapas-kriging) Mapas de predicción (**A**) y de la varianza/error (**B**) de la variable de interés.
+(ref:mapas-kriging) Mapas de predicción (**A**) y de la varianza/error (**B**) de la temperatura para la provincia de San José, para la fecha del 8 de Marzo.
 
-```{r mapas-kriging, warning=FALSE, fig.cap='(ref:mapas-kriging)', out.width='100%'}
-gg.kriging = gg.pred + gg.var + plot_annotation(tag_levels = 'A')
+```{r mapas-kriging, warning=FALSE, fig.cap='(ref:mapas-kriging)', out.width='100%', fig.height=6, fig.width=7}
+gg.kriging = gg.pred + gg.var + 
+  plot_annotation(tag_levels = 'A')
 gg.kriging
 ```
 

@@ -4,6 +4,8 @@ library(sp)
 library(sf)
 library(tidyverse)
 
+theme_set(theme_bw(base_size = 12))
+
 x <- 1:100 # x coordinates
 y <- 1:100 # y coordinates
 dat <- expand.grid(x = x, y = y) # create data frame with all combinations
@@ -11,7 +13,7 @@ dat$z <- 1 # initialize z variable
 coordinates(dat) <- ~x + y # set coordinates
 gridded(dat) <- TRUE # specify data is gridded
 
-modelo = vgm(psill = 0.9, model = 'Sph', range = 30,
+modelo = vgm(psill = 0.9, model = 'Sph', range = 40,
              nugget = 0.1, anis = c(35,.4)) # model to simulate
 beta.mod = 5 # mean of the random field
 var.mod = sum(modelo$psill) # variance of the random field
@@ -29,36 +31,48 @@ dat.sim.sf = st_as_sf(dat.sim.df, coords = 1:2) # spatial random fields
 head(dat.1.df) # show first lines of the data frame
 head(dat.sim.df)
 
+# averaged simulations
 dat.sim.df %>% 
   group_nest(x, y) %>% 
   mutate(mu = map_dbl(data, ~mean(.x$z)),
          s = map_dbl(data, ~sd(.x$z)),
-         MoE = qt(.975, nsim-1) * s/sqrt(nsim)) # averaged simulations
+         MoE = qt(.975, nsim-1) * s/sqrt(nsim)) 
 
 major = modelo$ang1[2] # major direction of anisotropy
 minor = ifelse(major < 90, major + 90, major - 90) # minor direction of anisotropy
 
+# variogram for single realization
 expvar <- variogram(sim1 ~ 1, data = dat.1, 
-                    alpha = c(major, minor)) # variogram for single realization
+                    alpha = c(major, minor)) 
 head(expvar) # show first lines of the variogram
 plot(expvar)
 
+# variogram of single random field
+expvar %>% 
+  ggplot(aes(dist, gamma, col = as.factor(dir.hor))) + 
+  geom_point(size = 2) +
+  scale_color_brewer(palette = 'Set1') +
+  labs(x = 'Distancia', y = 'Semivarianza', col = 'Dirección')
+
+# map of single random field
 ggplot(dat.1.df,aes(x = x, y = y, fill = sim1)) + 
   geom_raster() + 
   coord_equal() +
   scale_x_continuous(expand = c(0,0)) +
   scale_y_continuous(expand = c(0,0)) +
-  scale_fill_distiller(palette = 'YlOrRd', direction = 1)
-  # scale_fill_gradientn(colours=rainbow(50)) # map of single random field
+  scale_fill_distiller('',palette = 'YlOrRd', direction = 1)
+  # scale_fill_gradientn(colours=rainbow(50))
 
+# contour map of single random field
 dat.1.df %>% 
 ggplot(aes(x = x, y = y, z = sim1)) + 
   geom_contour(aes(col = stat(level)), binwidth = 2) + 
   coord_equal() +
   scale_x_continuous(expand = c(0,0)) +
   scale_y_continuous(expand = c(0,0)) +
-  scale_color_distiller(palette = 'YlOrRd', direction = 1) # contour map of single random field
+  scale_color_distiller(palette = 'YlOrRd', direction = 1)
 
+# maps of N random fields
 dat.sim.df %>% 
   ggplot(aes(x = x, y = y, fill = z)) + 
   geom_raster() + 
@@ -67,8 +81,9 @@ dat.sim.df %>%
   scale_y_continuous(expand = c(0,0)) +
   scale_fill_distiller(palette = 'YlOrRd', direction = 1) +
   # scale_fill_gradientn(colours=rainbow(50)) + 
-  facet_wrap(~sim, nrow = 1) # maps of N random fields
+  facet_wrap(~sim, nrow = 1) 
 
+# contour maps of N random fields
 dat.sim.df %>% 
   ggplot(aes(x = x, y = y, z = z)) + 
   geom_contour(aes(col = stat(level)), binwidth = 2) + 
@@ -76,13 +91,15 @@ dat.sim.df %>%
   scale_x_continuous(expand = c(0,0)) +
   scale_y_continuous(expand = c(0,0)) +
   scale_color_distiller(palette = 'YlOrRd', direction = 1) + 
-  facet_wrap(~sim, nrow = 1) # contour maps of N random fields
+  facet_wrap(~sim, nrow = 1) 
 
+# variogram for each random field realization
 dat.sim.variog = dat.sim.sf %>% 
   group_by(sim) %>% 
   group_modify(~variogram(z ~ 1, data = .x, alpha = c(major, minor))) %>% 
-  mutate(dir.hor = as.factor(dir.hor)) # variogram for each random field realization
+  mutate(dir.hor = as.factor(dir.hor)) 
 
+# variogram plot for each realization
 dat.sim.variog %>% 
   ggplot(aes(dist, gamma, col = dir.hor)) + 
   geom_point(size = 2) +
@@ -115,13 +132,14 @@ vm.lines = rbind.data.frame(cbind.data.frame(vm.major,dir.hor = major),
                             cbind.data.frame(vm.minor,dir.hor = minor)) %>% 
   mutate(dir.hor = as.factor(dir.hor))
 
+# variogram plot for each realization with model superimposed
 dat.sim.variog %>% 
   ggplot(aes(dist, gamma, col = dir.hor)) + 
   geom_point(size = 2) +
   geom_line(data = vm.lines) +
   scale_color_brewer(palette = 'Set1') +
   labs(x = 'Distance', y = 'Semivariance', col = 'Direction') +
-  facet_wrap(~sim, nrow = 2) # variogram plot for each realization with model superimposed
+  facet_wrap(~sim, nrow = 2) 
 
 dat.sim.variog %>% 
   ggplot(aes(dist, gamma, col = dir.hor)) + 
