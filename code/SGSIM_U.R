@@ -1,4 +1,5 @@
 # unconditional simulations on a 100 x 100 grid using gstat
+
 library(gstat)
 library(sp)
 library(sf)
@@ -20,14 +21,23 @@ var.mod = sum(modelo$psill) # variance of the random field
 nsim = 4 # number of simulations
 
 g1 <- gstat(id = 'z', formula = z~1, model = modelo,
-           data = dat, dummy = TRUE, beta = beta.mod, nmax = 50) # create gstat object
-dat.1 <- predict(g1, newdata = dat, nsim = 1) # simulate 1 random field
-dat.1.df = data.frame(dat.1) # converts simulation to data frame
-dat.sim = krige(z ~ 1, locations = dat, newdata = dat, model = modelo,
-                nmax = 50, dummy = T, beta = beta.mod, nsim = nsim) # simulate N random fields
+            data = dat, dummy = TRUE, beta = beta.mod, nmax = 50) # create gstat object
 
-dat.sim.df = data.frame(dat.sim) %>% gather('sim', 'z' , 3:(nsim+2)) # tidy N random fields
-dat.sim.sf = st_as_sf(dat.sim.df, coords = 1:2) # spatial random fields
+# simulate 1 random field
+dat.1 <- predict(g1, newdata = dat, nsim = 1) 
+
+# converts simulation to data frame
+dat.1.df = data.frame(dat.1) 
+
+# simulate N random fields
+dat.sim = krige(z ~ 1, locations = dat, newdata = dat, model = modelo,
+                nmax = 50, dummy = T, beta = beta.mod, nsim = nsim) 
+
+# tidy N random fields
+dat.sim.df = data.frame(dat.sim) %>% gather('sim', 'z' , 3:(nsim+2)) 
+
+# spatial random fields
+dat.sim.sf = st_as_sf(dat.sim.df, coords = 1:2) 
 head(dat.1.df) # show first lines of the data frame
 head(dat.sim.df)
 
@@ -105,7 +115,7 @@ dat.sim.variog %>%
   geom_point(size = 2) +
   scale_color_brewer(palette = 'Set1') +
   labs(x = 'Distance', y = 'Semivariance', col = 'Direction') +
-  facet_wrap(~sim, nrow = 2) # variogram plot for each realization
+  facet_wrap(~sim, nrow = 2)
 
 # calculates unit vector for variogram line
 unit_vector = function(th) {
