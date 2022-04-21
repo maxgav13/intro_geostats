@@ -1,0 +1,198 @@
+---
+title: "Multiples modelos"
+author: "Maximiliano Garnier Villarreal"
+output:
+  html_document:
+    df_print: paged
+    highlight: textmate
+    keep_md: yes
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+  word_document:
+    toc: yes
+  pdf_document:
+    df_print: kable
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+always_allow_html: yes
+---
+
+```{r opciones, message=FALSE, warning=FALSE}
+library(MOTE)
+library(papaja)
+library(gstat)
+library(sf)
+library(sp)
+library(rio) # importar datos
+library(conflicted)
+library(tidymodels)
+library(tidyverse)
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  # fig.width = 8,
+  # fig.asp = 0.618,
+  fig.align = "center",
+  out.width = "90%"
+)
+
+options(digits = 4)
+
+conflict_prefer("select", "dplyr")
+
+theme_set(theme_bw())
+```
+
+
+```{r}
+datos_sf = read_sf('SJ.gpkg',layer = 'SJ_clima')
+datos_sp = as(datos_sf, 'Spatial')
+datos = datos_sf %>% st_drop_geometry()
+  
+myvar = 'TempC'
+var.f = as.formula(paste(myvar,'~1'))
+g = gstat(formula = var.f, data = datos_sf)
+```
+
+```{r}
+h = 4000
+dmax = 70000
+dat.vgm = variogram(g,width=h,cutoff=dmax)
+plot(dat.vgm)
+```
+
+```{r}
+meseta = 23
+mod = "Sph"
+a = 50000 # effective range
+rango = case_when(
+  mod == 'Exp' ~ a/3,
+  mod == 'Gau' ~ a/sqrt(3),
+  mod %in% c('Sph','Cir','Pen') ~ a
+)
+pep = 0
+```
+
+```{r}
+varmods = c("Sph", "Cir", "Pen", "Exp", "Gau")
+
+mod.fit = map(varmods, 
+              ~ fit.variogram(dat.vgm, 
+                              model = vgm(meseta, 
+                                          .x,
+                                          rango,
+                                          pep))) %>% 
+  set_names(varmods)
+```
+
+
+```{r}
+walk2(mod.fit, 
+      varmods, 
+      ~ plot(dat.vgm, .x, main = .y) %>% print())
+```
+
+
+```{r}
+variog.line = map_df(mod.fit, 
+                     ~variogramLine(.x,maxdist = dmax,dir = c(1,0,0)), 
+                     .id = 'mod') %>% 
+  as_tibble() %>% 
+  mutate(mod = as_factor(mod))
+```
+
+
+```{r}
+ggplot(dat.vgm, aes(dist,gamma)) + 
+  geom_point(size=2) + 
+  geom_line(aes(col=mod,group=mod),data = variog.line) + 
+  facet_wrap(vars(mod),ncol = length(varmods)) + 
+  theme(legend.position = 'top')
+```
+
+
+```{r}
+map_dbl(mod.fit, 
+        ~ .x %>% 
+          attributes() %>% 
+          pluck('SSErr')) %>% 
+  sort()
+```
+
+
+```{r}
+set.seed(4101)
+kcv.list = map(mod.fit, 
+               ~ krige.cv(var.f, 
+                          locations = datos_sf, 
+                          model = .x, 
+                          nfold = 10))
+```
+
+
+```{r}
+mape_tb = map_df(kcv.list, 
+                 ~mape(.x %>% st_drop_geometry(), 
+                       observed, var1.pred), .id = 'mod') %>% 
+  select(-.estimator)
+
+
+rmse_tb = map_df(kcv.list, 
+                 ~rmse(.x %>% st_drop_geometry(), 
+                       observed, var1.pred), .id = 'mod') %>% 
+  select(-.estimator)
+
+R2_tb = map_dbl(kcv.list, 
+                .f = ~1 - rsq_trad_vec(truth = .x$observed, 
+                                       estimate = .x$var1.pred), .id = 'mod') %>% 
+  enframe(name = 'mod', value = '.estimate') %>% 
+  mutate(.metric = 'R2') %>% 
+  select(mod,.metric,.estimate)
+
+msdr_tb = map_dbl(kcv.list, 
+                  ~abs(1-mean(.x$residual^2/.x$var1.var)), .id = 'mod') %>% 
+  enframe(name = 'mod', value = '.estimate') %>% 
+  mutate(.metric = 'msdr') %>% 
+  select(mod,.metric,.estimate)
+
+
+g_tb = map_dbl(kcv.list, 
+               ~abs((1 - (sum((.x$var1.pred - .x$observed)^2) / sum((.x$observed - mean(.x$observed))^2)))-1), 
+               .id = 'mod') %>% 
+  enframe(name = 'mod', value = '.estimate') %>% 
+  mutate(.metric = 'g') %>% 
+  select(mod,.metric,.estimate)
+```
+
+
+```{r}
+rmse_tb %>% 
+  arrange(.estimate)
+
+mape_tb %>% 
+  arrange(.estimate)
+
+R2_tb %>% 
+  arrange(.estimate)
+
+msdr_tb %>% 
+  arrange(.estimate)
+
+g_tb %>% 
+  arrange(.estimate)
+
+bind_rows(mape_tb,rmse_tb,R2_tb,msdr_tb,g_tb) %>% 
+  group_by(.metric) %>% 
+  slice_min(.estimate,n = 1)
+```
+
+
+
+
+
+

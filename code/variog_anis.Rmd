@@ -1,0 +1,195 @@
+---
+title: "Anisotropía"
+author: "Maximiliano Garnier Villarreal"
+output:
+  html_document:
+    df_print: paged
+    highlight: textmate
+    keep_md: yes
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+  word_document:
+    toc: yes
+  pdf_document:
+    df_print: kable
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+always_allow_html: yes
+---
+
+```{r opciones, message=FALSE, warning=FALSE}
+library(MOTE)
+library(papaja)
+library(gstat)
+library(sf)
+library(sp)
+library(rio) # importar datos
+library(tidymodels)
+library(tidyverse)
+options(digits = 4)
+
+theme_set(theme_bw())
+```
+
+# data
+
+```{r}
+datos_sf = read_sf('SJ.gpkg',layer = 'SJ_clima')
+datos_sp = as(datos_sf, 'Spatial')
+datos = datos_sf %>% st_drop_geometry()
+
+myvar = 'TempC'
+var.f = as.formula(paste(myvar,'~1'))
+g = gstat(formula = var.f, data = datos_sf)
+```
+
+```{r}
+h = 4000
+dmax = 70000
+dirs = seq(0,135,45)
+
+dat.vgm = variogram(g,width=h,cutoff=dmax)
+dat.vgm2 = variogram(g,width=h,cutoff=dmax,
+                     alpha = dirs, tol.hor = 22.5)
+map.vgm = variogram(g,width=h*2,cutoff=dmax,map=T)
+
+plot(dat.vgm)
+plot(map.vgm)
+plot(dat.vgm2)
+```
+
+
+# initial parameters
+
+```{r}
+meseta = 23
+mod = "Sph"
+a = 50000 # effective range
+rango = case_when(
+  mod == 'Exp' ~ a/3,
+  mod == 'Gau' ~ a/sqrt(3),
+  mod %in% c('Sph','Cir','Pen') ~ a
+)
+pep = 0
+```
+
+```{r message=FALSE, warning=FALSE}
+set.seed(13)
+CV = krige.cv(var.f, datos_sf, 
+              vgm(meseta, mod, rango, pep, anis = c(135, .6)),
+              nfold = 10)
+rmse_vec(CV$observed,CV$var1.pred)
+mape_vec(CV$observed,CV$var1.pred)
+rsq_vec(CV$observed,CV$var1.pred)
+rsq_trad_vec(CV$observed,CV$var1.pred)
+```
+
+# combination of major direction and anisotropy ratio
+
+```{r}
+anis_df = expand_grid(dir = seq(110,150,10),
+                      r = seq(0.2, .9, .1),
+                      mod = c('Sph','Pen','Cir'))
+anis_df
+```
+
+
+# iteration over anisotropy parameters
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+set.seed(13)
+anis_df = anis_df %>% 
+  mutate(fit = pmap(list(a = dir, b = r, c = mod), 
+                    function(a,b,c) {fit.variogram(dat.vgm2, 
+                                          model = vgm(meseta, 
+                                                      c,
+                                                      rango,
+                                                      pep,
+                                                      anis = c(a, b)))}),
+         CV = map(.x = fit, 
+                  .f = ~krige.cv(var.f, datos_sf, .x, nfold = 5)),
+         RMSE = map_dbl(.x = CV, 
+                        .f = ~rmse_vec(truth = .x$observed, 
+                                        estimate = .x$var1.pred)),
+         MAPE = map_dbl(.x = CV, 
+                        .f = ~mape_vec(truth = .x$observed, 
+                                       estimate = .x$var1.pred)),
+         R2 = map_dbl(.x = CV, 
+                      .f = ~rsq_trad_vec(truth = .x$observed, 
+                                         estimate = .x$var1.pred)),
+         MSDR = map_dbl(.x = CV, 
+                        .f = ~abs(1-mean(.x$residual^2/.x$var1.var))),
+         G = map_dbl(.x = CV, 
+                     .f = ~abs((1 - (sum((.x$var1.pred - .x$observed)^2) / sum((.x$observed - mean(.x$observed))^2)))-1)
+         ))
+anis_df
+```
+
+# finds "best" anisotropy parameters
+
+```{r}
+anis_df2 = anis_df %>% 
+  select(-fit,-CV)
+
+anis_df2 %>% 
+  slice_min(RMSE, n = 5)
+
+anis_df2 %>% 
+  slice_min(MAPE, n = 5)
+
+anis_df2 %>% 
+  slice_max(R2, n = 5)
+
+anis_df2 %>% 
+  slice_min(MSDR, n = 5)
+
+anis_df2 %>% 
+  slice_min(G, n = 5)
+```
+
+```{r}
+mod = 'Sph'
+dat.vgm2 = variogram(g, width=h, cutoff=dmax,
+                     alpha = dirs, tol.hor = 22.5)
+fit0 = fit.variogram(dat.vgm2, 
+                     model = vgm(psill = meseta, 
+                                 model = mod, 
+                                 range = rango, 
+                                 nugget = pep)) # omnidireccional
+fit1 = fit.variogram(dat.vgm2, 
+                     model = vgm(psill = meseta, 
+                                 model = mod, 
+                                 range = rango, 
+                                 nugget = pep,
+                                 anis = c(135,.5))) # al ojo
+fit2 = fit.variogram(dat.vgm2, 
+                     model = vgm(psill = meseta, 
+                                 model = mod, 
+                                 range = rango, 
+                                 nugget = pep,
+                                 anis = c(130,.7)))
+fit3 = fit.variogram(dat.vgm2, 
+                     model = vgm(psill = meseta, 
+                                 model = mod, 
+                                 range = rango, 
+                                 nugget = pep,
+                                 anis = c(150,.2)))
+```
+
+```{r}
+fits = list(fit0,fit1,fit2,fit3)
+fits %>% 
+  walk(print)
+```
+
+
+```{r}
+fits %>% 
+  walk(~ plot(dat.vgm2,.x) %>% print())
+```
+
+
+
+

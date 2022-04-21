@@ -102,7 +102,7 @@ La tabla contiene 5 columnas: "Lat", "Long", "TempC", "HumedadSuelo", "HumedadRe
 
 Se puede obtener un resumen estadístico de la variable por medio de la función `descr()` del paquete **summarytools** [@R-summarytools], el cual es trabajado para mostrar solo lo necesario. El Cuadro \@ref(tab:AED) se genera con la función `kable()` del paquete **kableExtra**, donde se pueden modificar aspectos como los nombres de las columnas, la cantidad de dígitos a usar, el alineado de las columnas, y el encabezado de la tabla. Adicionalmente se guarda la varianza de la variable en el objeto `S`.
 
-```{r AED, fig.cap='Histograma de la variable. La línea roja corresponde con la media, y la curva azul con la curva de densidad empírica.'}
+```{r AED, fig.cap='Histograma de la temperatura promedio de los últimos 10 años para el 8 de Marzo para la provincia de San José. La línea roja corresponde con la media, y la curva azul con la curva de densidad empírica.'}
 datos = import(here('data','clima_SJ_tidy.csv'), setclass = 'tbl')
 
 myvar = 'TempC' # variable a modelar
@@ -185,7 +185,7 @@ datosint2 = st_crop(datosint, outline)
 
 La distribución en el espacio de los datos se muestra en la Figura \@ref(fig:dist-espacial), donde los puntos se encuentran rellenados de acuerdo al valor de la variable (`aes_string(col = myvar)`), de nuevo haciendo uso de **ggplot2** y una geometría específica para datos **sf** (`geom_sf()`).
 
-```{r dist-espacial, fig.cap='Mapa de puntos mostrando la distribución espacial de la variable.'}
+```{r dist-espacial, fig.cap='Mapa de puntos mostrando la distribución espacial de la temperatura promedio de los últimos 10 años para el 8 de Marzo para la provincia de San José.'}
 gg.map.pts = ggplot() + 
   geom_sf(data = outline, col = 'cyan', alpha = .1, size = .75) + 
   geom_sf(data = datos_sf, aes_string(col = myvar), size = 3, alpha = 0.6) + 
@@ -512,7 +512,7 @@ La interpolación por Kriging se realiza con la función `krige()`, cuyos argume
 
 ```{r kriging, eval=TRUE}
 ok = krige(myformula, 
-           locations = datos_sp,
+           locations = datos_sf,
            newdata = datosint2, 
            model = varmod)
 ```
