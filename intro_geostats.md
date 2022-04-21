@@ -33,6 +33,7 @@ output:
     df_print: kable
     toc: false
     toc_depth: 2
+    number_sections: false
   bookdown::pdf_document2:
     df_print: kable
     number_sections: false
@@ -260,6 +261,7 @@ En estas métricas $N$ es el total de observaciones (puntos), $Y_i$ es el valor 
   (\#eq:xval-me)
 \end{equation}
 ```
+
 -   Error cuadrático medio ($RMSE$): Este valor corresponde con la desviación promedio de los errores al cuadrado. Se encuentra en la escala de la variable e idealmente se prefieren valores pequeños. Se calcula mediante la Ecuación \@ref(eq:xval-rmse) y comparando modelos se escogería el modelo que presente un $RMSE$ menor.
 
 ```{=tex}
@@ -268,6 +270,7 @@ En estas métricas $N$ es el total de observaciones (puntos), $Y_i$ es el valor 
   (\#eq:xval-rmse)
 \end{equation}
 ```
+
 -   Razón de desviación cuadrática media ($MSDR$): Esta valor compara la diferencia entre la predicción y valor actual con respecto a la varianza (error) obtenida de la interpolación ($s^2_{ei}$). Se esperaría que este valor ande cerca de 1. Se calcula mediante la Ecuación \@ref(eq:xval-msdr) y comparando modelos se escogería el que presente un $MSDR$ más cercano a 1.
 
 ```{=tex}
@@ -276,6 +279,7 @@ En estas métricas $N$ es el total de observaciones (puntos), $Y_i$ es el valor 
   (\#eq:xval-msdr)
 \end{equation}
 ```
+
 -   Error Porcentual Absoluto Medio ($MAPE$): Es una medida porcentual de la diferencia entre lo observado y lo predicho, con un rango de 0 a 1 o de 0 a 100 si se multiplica por 100. Se esperaría que este valor ande cerca de 0 o lo más bajo posible. Se calcula mediante la Ecuación \@ref(eq:xval-mape) y comparando modelos se escogería el que presente el $MAPE$ más bajo.
 
 ```{=tex}
@@ -284,6 +288,7 @@ En estas métricas $N$ es el total de observaciones (puntos), $Y_i$ es el valor 
   (\#eq:xval-mape)
 \end{equation}
 ```
+
 -   Estadístico de bondad de predicción ($G$): Este estadístico mide qué tan efectiva es la predicción a si se hubiera usado simplemente la media (promedio) de la variable. Valores de 1 indican una predicción perfecta, valores positivos indican que el modelo es más efectivo que usar la media, valores negativos indican que el modelo es menos efectivo que usar la media, y un valor de cero indica que sería mejor usar la media. Se calcula mediante la Ecuación \@ref(eq:xval-g) y comparando modelos se escogería el que presente el $G$ más cercano a 1 o más positivo.
 
 ```{=tex}
@@ -292,16 +297,17 @@ En estas métricas $N$ es el total de observaciones (puntos), $Y_i$ es el valor 
   (\#eq:xval-g)
 \end{equation}
 ```
+
 Todas estas métricas, excepto la $MSDR$, se pueden aplicar para cualquier modelo de cualquier método de interpolación. Para la $MSDR$ se ocupa que el método brinde un error (varianza) de la predicción y ésta es una de las fortalezas de Kriging sobre la mayoría de métodos. Como recomendación, al comparar modelos si hay valores muy similares de la mayoría de las métricas se recomienda usar las métricas de $MSDR$ y el estadístico $G$ como las más importantes.
 
 ## Kriging
 
 Kriging es un método de interpolación (estimación), por lo que la idea es obtener valores de la variable en lugares donde no se pudo medir. El método hace uso del modelo ajustado para asignar pesos a los puntos a interpolar dependiendo de la distancia entre ellos. Los puntos más cercanos van a presentar valores menores de semivarianza (mayor peso) y los puntos más lejanos valores mayores de semivarianza (menor peso), y si hay puntos que caen fuera del rango estos van a tener una influencia mínima o nula [@chiles1999; @goovaerts1997; @isaaks1989; @webster2007]. Lo anterior se presenta de manera gráfica en la Figura \@ref(fig:kriging-pesos).
 
-(ref:kriging-pesos) Visualización del proceso de interpolación mediante Kriging, donde para el punto a interpolar (D), el punto que está más cercano (C) tiene más peso (influencia, baja semivarianza), y el punto más lejano (A) prácticamente no tiene peso ya que cae fuera del rango. Tomado de @mckillup2010.
+(ref:kriging-pesos) Visualización del proceso de interpolación mediante Kriging, donde para el punto a interpolar (D), el punto que está más cercano (C) tiene más peso (influencia, baja semivarianza), y el punto más lejano (A) prácticamente no tiene peso ya que cae fuera del rango. Modificado de @mckillup2010.
 
 <div class="figure" style="text-align: center">
-<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/kriging-pesos.png" alt="(ref:kriging-pesos)" width="90%" />
+<img src="/Users/maximiliano/Documents/UCR/Docencia/Extras/R/bookdown/intro_geostats/images/F07.png" alt="(ref:kriging-pesos)" width="90%" />
 <p class="caption">(\#fig:kriging-pesos)(ref:kriging-pesos)</p>
 </div>
 

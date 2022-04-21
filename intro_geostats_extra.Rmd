@@ -71,7 +71,17 @@ knitr::opts_chunk$set(
   out.width = "90%"
 )
 
-# options(OutDec = ',')
+formato.salida = case_when(
+  knitr::is_html_output() ~ 'html',
+  knitr::is_latex_output() ~ 'latex',
+  T  ~ 'simple',
+)
+
+options(
+  knitr.table.format = formato.salida
+  , OutDec = ','
+  , digits = 3
+)
 
 theme_set(theme_bw(base_size = 12))
 # conflict_prefer('select','dplyr')
@@ -114,7 +124,6 @@ descr(datos[myvar],style = 'rmarkdown',transpose = T) %>%
   kable(col.names = c('N','Media','Desv. Est.','Min','Mediana',
                       'Max','MAD','CV','Asimetría'),
         digits = 2,
-        # format = 'simple',
         align = 'c',
         caption = 'Resumen estadístico de los datos.') %>% 
   kable_styling(full_width = F)
@@ -283,15 +292,15 @@ dat.vgm2.gg = dat.vgm2 %>%
 
 ```{r variog-dir, fig.cap='Variogramas experimentales direccionales cada 45°. La línea roja punteada representa la varianza de la variable, lo que se aproxima a la meseta total.', out.width='100%', fig.height=6, fig.width=7}
 gg.dir.exp = ggplot(dat.vgm2.gg,aes(x = dist, y = gamma,
-                       col = dir.hor, shape = dir.hor)) + 
-  geom_point(size = 2) + 
+                       col = dir.hor)) + 
+  geom_point(size = 2, shape=3) + 
   labs(x = x_var, y = y_var, col = "Dirección", shape = 'Dirección') +
   geom_hline(yintercept = S, col = 'red', linetype = 2) +
   ylim(0, max(dat.vgm2$gamma)) +
   scale_x_continuous(labels = scales::label_number(scale = 1/1000), 
                      limits = c(0, max(dat.vgm2$dist))) +
   scale_color_brewer(palette = 'Dark2') +
-  scale_shape_manual(values = 1:4) + 
+  # scale_shape_manual(values = 1:4) + 
   facet_wrap(~dir.hor) + 
   geom_text_repel(aes(label = np), size = 2, show.legend = F) +
   theme(legend.position = 'top')
@@ -352,7 +361,6 @@ varmod %>%
   select(1:5) %>% 
   kable(col.names = c('Modelo','Meseta','Rango',
                       'Razón','Dirección \n Principal'),
-        # format = 'simple',
         align = 'c',
         digits = 3,
         caption = 'Modelo ajustado al variograma experimental') %>% 
@@ -471,7 +479,6 @@ Para crear el Cuadro \@ref(tab:xval-metrics-tab) de nuevo se hace uso de la func
 ```{r xval-metrics-tab}
 metricas %>% 
   kable(col.names = c('Métrica','Valor'),
-        # format = 'simple',
         align = 'c',
         # digits = 3,
         caption = 'Métricas de ajuste para la validación cruzada') %>% 
